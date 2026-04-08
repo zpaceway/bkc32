@@ -1,0 +1,12 @@
+Fase 1) Análisis del sistema y definición de requerimientos (16 h)
+	Comprender arquitectura del sistema: ESP32, protocolo de comunicación.
+	Identificación de variables EIS: f, Re(Z), Im(Z), ∣Z∣, fase, temperatura.
+	Elaboración de requerimientos funcionales del software
+
+Entregable 1: Especificación de requerimientos + diagrama de bloques del sistema.
+Fase 2) Desarrollo del protocolo de comunicación Python–ESP32 (20 h)
+1)	Implementación en Python.
+2)	Implementación de comandos
+3)	Validación de formato, control de errores, reintentos.
+
+Entregable 2: Módulo funcional + prueba de comunicación con ESP32.

@@ -1,0 +1,17 @@
+[project]
+name = "bkc32"
+version = "0.1.0"
+description = "EIS impedance measurement system (ESP32 + AD5933) for Candida albicans detection"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "pyserial>=3.5",
+    "python-dotenv>=1.2.2",
+    "websockets>=16.0",
+]
+
+[dependency-groups]
+dev = [
+    "mypy>=1.20.0",
+    "types-pyserial>=3.5.0.20251001",
+]
