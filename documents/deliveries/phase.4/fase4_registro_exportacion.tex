@@ -1,0 +1,265 @@
+\documentclass[11pt,a4paper,spanish]{book}
+\usepackage{estilo_unir-1}
+\hypersetup{
+	colorlinks   = true,
+	urlcolor     = blue,
+	linkcolor    = black,
+	citecolor    = red
+}
+\usepackage[nottoc]{tocbibind}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, positioning, fit}
+\usepackage{listings}
+\lstset{
+	basicstyle=\ttfamily\footnotesize,
+	breaklines=true,
+	frame=single,
+	backgroundcolor=\color[gray]{0.95},
+	numbers=left,
+	numberstyle=\tiny\color[gray]{0.5},
+	keywordstyle=\color{blue},
+	commentstyle=\color[gray]{0.5},
+	tabsize=2
+}
+
+%---------------------------
+% Datos del trabajo
+%---------------------------
+\subject{Pr\'{a}cticas Acad\'{e}micas Externas}
+\title{Sistema de medici\'{o}n de impedancia (EIS) para cuantificaci\'{o}n de Candida albicans --- Fase 4}
+\author{Andr\'{e}s Alexandro Tapia Flores}
+\profesor{Universidad Internacional de la Rioja (UNIR)}
+\date{Abril 2026}
+
+\begin{document}
+\renewcommand{\listfigurename}{\'{I}ndice de figuras}
+\renewcommand{\contentsname}{\'{I}ndice de contenidos}
+\renewcommand{\figurename}{Figura}
+\renewcommand{\tablename}{Tabla}
+\setlength{\headheight}{26pt}
+
+\maketitle
+\frontmatter
+\tableofcontents
+
+\chapter{Resumen}
+La Fase~4 se centra en el registro persistente de datos de adquisici\'{o}n, el almacenamiento de metadatos por sesi\'{o}n, la exportaci\'{o}n estructurada de resultados y la trazabilidad de clasificaci\'{o}n cu\'{a}ntica/cl\'{a}sica para comparaci\'{o}n en interfaz.
+
+Se implementa un modelo de sesi\'{o}n en backend que encapsula configuraci\'{o}n, calibraci\'{o}n, temperatura, datos punto a punto, eventos de protocolo y salida de clasificadores. Cada barrido finalizado genera artefactos exportables en formatos complementarios (CSV, JSON y resumen textual), permitiendo auditor\'{i}a t\'{e}cnica y uso posterior en pipelines de aprendizaje.
+
+\vspace{0.5cm}
+{\bf Palabras clave:} registro de datos, metadatos, exportaci\'{o}n, trazabilidad, clasificaci\'{o}n cu\'{a}ntica
+
+\mainmatter
+
+\chapter{Introducci\'{o}n}
+
+Una etapa cr\'{i}tica del sistema EIS no es solo adquirir y visualizar, sino conservar cada sesi\'{o}n con contexto suficiente para su reproducci\'{o}n anal\'{i}tica. En aplicaciones bioelectroqu\'{i}micas, la interpretaci\'{o}n posterior requiere conocer condiciones de barrido, estado de calibraci\'{o}n, temperatura, etiqueta objetivo y comportamiento del clasificador.
+
+En esta fase se implementa una capa de persistencia orientada a sesiones, de forma que cada barrido se convierte en una unidad trazable y exportable. Este enfoque permite:
+\begin{itemize}
+	\item Integraci\'{o}n con entrenamiento de modelos (cu\'{a}nticos y cl\'{a}sicos).
+	\item Auditor\'{i}a de calidad de adquisici\'{o}n.
+	\item Comparaci\'{o}n temporal entre ejecuciones.
+	\item Reproducibilidad de experimentos.
+\end{itemize}
+
+
+\chapter{Objetivos}
+
+\section{Objetivo general}
+Dise\~{n}ar e implementar el subsistema de registro, metadatos y exportaci\'{o}n para sesiones de adquisici\'{o}n EIS, incorporando resultado de clasificaci\'{o}n cu\'{a}ntica y comparaci\'{o}n con clasificador cl\'{a}sico.
+
+\section{Objetivos espec\'{i}ficos}
+\begin{itemize}
+	\item Definir un modelo de sesi\'{o}n persistente para cada barrido.
+	\item Almacenar datos crudos y eventos de protocolo con marcas temporales UTC.
+	\item Asociar metadatos de configuraci\'{o}n, calibraci\'{o}n y temperatura.
+	\item Exportar datos en m\'{u}ltiples formatos para consumo anal\'{i}tico.
+	\item Exponer en UI la ruta de exportaci\'{o}n y el historial de sesiones.
+	\item Verificar consistencia entre etiqueta esperada y etiqueta predicha por modelos cu\'{a}ntico y cl\'{a}sico.
+\end{itemize}
+
+
+\chapter{Dise\~{n}o del registro y metadatos}
+
+\section{Entidad de sesi\'{o}n}
+
+Cada barrido se modela como una sesi\'{o}n con identificador \texttt{session\_<timestamp>}. Incluye:
+\begin{itemize}
+	\item Identidad temporal: inicio, fin y motivo de cierre.
+	\item Contexto instrumental: configuraci\'{o}n de barrido, calibraci\'{o}n y temperatura.
+	\item Datos: secuencia de puntos EIS con timestamp individual.
+	\item Eventos: \texttt{sweep\_start}, \texttt{sweep\_done}, errores y se\~{n}ales de control.
+	\item Resultado anal\'{i}tico: probabilidad/etiqueta cu\'{a}ntica, probabilidad/etiqueta cl\'{a}sica y campos de coincidencia.
+\end{itemize}
+
+\section{Flujo de persistencia}
+
+El flujo implementado se resume en la Figura~\ref{fig:persistencia-fase4}.
+
+\begin{figure}[ht]
+	\centering
+	\begin{tikzpicture}[
+		node distance=1.6cm and 1.5cm,
+		block/.style={rectangle, draw, rounded corners, fill=blue!8, minimum width=3.8cm, minimum height=1.2cm, align=center, font=\small},
+		arrow/.style={-{Stealth[length=2.5mm]}, thick}
+		]
+		\node[block] (start) {Evento \texttt{sweep\_start}\\Creaci\'{o}n de sesi\'{o}n activa};
+		\node[block, right=of start] (data) {Evento \texttt{data}\\Acumulaci\'{o}n punto a punto};
+		\node[block, right=of data] (close) {Evento \texttt{sweep\_done}\\Cierre y an\'{a}lisis};
+		\node[block, below=of data, fill=green!10] (files) {Persistencia en disco\\CSV + metadata JSON + summary + bundle};
+		\node[block, below=of close, fill=orange!10] (ui) {Publicaci\'{o}n en UI\\\texttt{analysis}, \texttt{export}, \texttt{history}};
+
+		\draw[arrow] (start) -- (data);
+		\draw[arrow] (data) -- (close);
+		\draw[arrow] (close) -- (files);
+		\draw[arrow] (files) -- (ui);
+	\end{tikzpicture}
+	\caption[Flujo de persistencia por sesi\'{o}n]{Flujo de registro en backend para cierre de sesi\'{o}n y exportaci\'{o}n. Fuente: elaboraci\'{o}n propia.}
+	\label{fig:persistencia-fase4}
+\end{figure}
+
+\section{Estructura de salida}
+
+Por cada sesi\'{o}n se crea un directorio en \texttt{data/acquisitions/<session\_id>/} con los siguientes archivos:
+
+\begin{table}[ht]
+	\centering
+	\begin{tabular}{l p{8.8cm}}
+		\hline\hline
+		Archivo                      & Contenido                                                                 \\ [0.5ex]
+		\hline
+		\texttt{<id>\_data.csv}      & Puntos EIS crudos con columnas \texttt{i,f,Z,phase,reZ,imZ,ts}.           \\
+		\texttt{<id>\_metadata.json} & Metadatos de sesi\'{o}n, eventos y resultado de clasificaci\'{o}n.        \\
+		\texttt{<id>\_summary.txt}   & Resumen textual compacto para inspecci\'{o}n r\'{a}pida en consola.       \\
+		\texttt{<id>\_bundle.json}   & Paquete integral (metadatos + puntos + eventos) para intercambio directo. \\
+		\hline
+	\end{tabular}
+	\caption[Artefactos de exportaci\'{o}n]{Artefactos generados por sesi\'{o}n al finalizar un barrido. Fuente: elaboraci\'{o}n propia.}
+	\label{tab:artefactos-fase4}
+\end{table}
+
+
+\chapter{Algoritmo clasificador cu\'{a}ntico y verificaci\'{o}n en UI}
+
+\section{Implementaci\'{o}n del clasificador cu\'{a}ntico}
+
+El clasificador cu\'{a}ntico se implementa en \texttt{src/classifier.py} como un simulador vectorial de estado para 4 qubits, con las siguientes etapas:
+
+\begin{enumerate}
+	\item \textbf{Extracci\'{o}n de caracter\'{i}sticas}: media de magnitud, pendiente logar\'{i}tmica, energ\'{i}a imaginaria, rango de fase, desviaci\'{o}n de fase y raz\'{o}n baja/alta frecuencia.
+	\item \textbf{Normalizaci\'{o}n}: mapeo de cada descriptor a $[-1,1]$ por funci\'{o}n \texttt{tanh} calibrada.
+	\item \textbf{Codificaci\'{o}n angular}: transformaci\'{o}n de descriptores en \textit{angles} para rotaciones $R_Y$.
+	\item \textbf{Ansatz variacional}: capas $R_Y$, $R_Z$ y compuertas CNOT en topolog\'{i}a anillo/parcial.
+	\item \textbf{Medici\'{o}n}: c\'{a}lculo de valores esperados en qubits 0 y 2, combinados con un t\'{e}rmino de \textit{feature drive} para obtener score final.
+\end{enumerate}
+
+La probabilidad cu\'{a}ntica se define como $p_q = (score + 1)/2$, y la etiqueta cu\'{a}ntica como 1 si $p_q \geq 0.5$.
+
+\section{Comparador cl\'{a}sico}
+
+En paralelo, se calcula una probabilidad cl\'{a}sica mediante una combinaci\'{o}n lineal (logit) de las mismas caracter\'{i}sticas y funci\'{o}n sigmoide. Este valor se usa para contraste operativo en UI y trazabilidad de coherencia entre modelos.
+
+\section{Verificaci\'{o}n de valor en interfaz}
+
+La interfaz muestra por sesi\'{o}n:
+\begin{itemize}
+	\item Probabilidad cu\'{a}ntica y etiqueta cu\'{a}ntica.
+	\item Probabilidad cl\'{a}sica y etiqueta cl\'{a}sica.
+	\item Campo \texttt{expected\_label} y banderas \texttt{quantum\_match}/\texttt{classical\_match}.
+	\item Estado de acuerdo/discrepancia entre modelos.
+\end{itemize}
+
+Esto satisface el requerimiento de comparaci\'{o}n expl\'{i}cita de valor clasificador en la UI.
+
+
+\chapter{Pruebas de exportaci\'{o}n y trazabilidad}
+
+\section{Sesiones de validaci\'{o}n}
+
+Se ejecutaron dos barridos consecutivos con etiquetas esperadas 1 y 0:
+\begin{itemize}
+	\item \texttt{session\_20260417\_054612\_940592} (esperada 1)
+	\item \texttt{session\_20260417\_054613\_366924} (esperada 0)
+\end{itemize}
+
+Ambas sesiones cerraron con \texttt{stop\_reason=completed} y con 40 puntos registrados.
+
+\section{Resumen de clasificaci\'{o}n y coherencia}
+
+\begin{table}[ht]
+	\centering
+	\scriptsize
+	\begin{tabular}{l c c c c c c}
+		\hline\hline
+		Sesi\'{o}n & Esperada & Prob. Q  & Label Q & Prob. C  & Label C & Coincidencia \\ [0.5ex]
+		\hline
+		S1         & 1        & 0.658004 & 1       & 0.949788 & 1       & Q=OK, C=OK   \\
+		S2         & 0        & 0.407482 & 0       & 0.080267 & 0       & Q=OK, C=OK   \\
+		\hline
+	\end{tabular}
+	\caption[Validaci\'{o}n de clasificaci\'{o}n por sesi\'{o}n]{Resultados de clasificaci\'{o}n almacenados en metadatos y visualizados en UI (S1: \texttt{...054612\_940592}, S2: \texttt{...054613\_366924}). Fuente: elaboraci\'{o}n propia.}
+	\label{tab:validacion-clasificacion-fase4}
+\end{table}
+
+\section{Trazabilidad de archivos}
+
+Para la sesi\'{o}n \texttt{session\_20260417\_054612\_940592} se verific\'{o}n los cuatro artefactos:
+\begin{itemize}
+	\item \texttt{session\_20260417\_054612\_940592\_data.csv}
+	\item \texttt{session\_20260417\_054612\_940592\_metadata.json}
+	\item \texttt{session\_20260417\_054612\_940592\_summary.txt}
+	\item \texttt{session\_20260417\_054612\_940592\_bundle.json}
+\end{itemize}
+
+La misma estructura se valid\'{o} para la sesi\'{o}n de control, confirmando consistencia del proceso de exportaci\'{o}n.
+
+\section{Ejemplo de contenido metadata}
+
+El siguiente extracto ilustra la estructura persistida en \texttt{metadata.json}:
+
+\begin{lstlisting}[caption={Estructura simplificada de metadatos por sesi\'{o}n}]
+{
+  "session_id": "session_20260417_054612_940592",
+  "started_at": "2026-04-17T05:46:12.940607+00:00",
+  "finished_at": "2026-04-17T05:46:13.363389+00:00",
+  "stop_reason": "completed",
+  "config": {"fmin": 1000.0, "fmax": 100000.0, "npoints": 40, "settle": 12},
+  "calibration": {"gain": 1.1112e-06, "phase": -0.027855, "R_cal": 10000.0},
+  "temperature": 26.82,
+  "expected_label": 1,
+  "analysis": {
+    "quantum_probability": 0.658004,
+    "quantum_label": 1,
+    "classical_probability": 0.949788,
+    "classical_label": 1,
+    "quantum_match": true,
+    "classical_match": true
+  }
+}
+\end{lstlisting}
+
+
+\chapter{Conclusiones}
+
+La Fase~4 consolida el sistema EIS simulado con capacidades de trazabilidad completas, cumpliendo los objetivos de registro, metadatos y exportaci\'{o}n.
+
+Los aportes principales son:
+\begin{itemize}
+	\item Modelo de sesi\'{o}n robusto con contexto instrumental y anal\'{i}tico integrado.
+	\item Persistencia multi-formato orientada tanto a inspecci\'{o}n humana como a consumo por pipelines autom\'{a}ticos.
+	\item Historial consultable desde UI para navegaci\'{o}n de sesiones previas.
+	\item Verificaci\'{o}n expl\'{i}cita de clasificaci\'{o}n cu\'{a}ntica y cl\'{a}sica contra etiqueta esperada.
+	\item Base lista para siguientes etapas de entrenamiento offline y evaluaci\'{o}n estad\'{i}stica con datasets acumulados.
+\end{itemize}
+
+\begin{thebibliography}{99}
+	\bibitem[pyserial(2020)]{pyserial} Liechti, C. (2020). pySerial 3.5 Documentation. \url{https://pyserial.readthedocs.io/}
+	\bibitem[Python Software Foundation(2026)]{pythonasyncio} Python Software Foundation (2026). \emph{asyncio --- Asynchronous I/O}. \url{https://docs.python.org/3/library/asyncio.html}
+	\bibitem[websockets(2026)]{websocketslib} Aymeric Augustin et al. (2026). \emph{websockets 16 Documentation}. \url{https://websockets.readthedocs.io/}
+	\bibitem[Havl\'{i}\v{c}ek et al.(2019)]{havlicek2019} Havl\'{i}\v{c}ek, V., C\'{o}rcoles, A. D., Temme, K., Harrow, A. W., Kandala, A., Chow, J. M., \& Gambetta, J. M. (2019). Supervised learning with quantum-enhanced feature spaces. \emph{Nature}, 567(7747), 209--212.
+	\bibitem[Bergholm et al.(2022)]{pennylane2022} Bergholm, V., Izaac, J., Schuld, M. et al. (2022). PennyLane: Automatic differentiation of hybrid quantum-classical computations. \emph{arXiv:1811.04968v4}.
+\end{thebibliography}
+
+\end{document}

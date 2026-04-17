@@ -24,6 +24,7 @@ wheels/
 *.synctex.gz
 *.bbl
 *.blg
+*.bak*
 
 # Editor / OS
 .vscode/
@@ -35,3 +36,6 @@ wheels/
 
 # Local / personal
 .local/
+
+# Acquisition exports
+data/

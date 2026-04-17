@@ -1,206 +1,116 @@
-# BKC32 — EIS Impedance Measurement System
+# BKC32 - Sistema EIS con ESP32/AD5933 (Modo Simulado)
 
-Electrochemical Impedance Spectroscopy (EIS) system for **Candida albicans** detection in saliva samples. Built with ESP32 + AD5933 hardware, a Python async backend, and a React web interface.
+Proyecto de adquisicion y analisis de espectroscopia de impedancia electroquimica (EIS) para cuantificacion de *Candida albicans*.
 
-## Architecture
+En esta version se habilita un flujo completo para las fases 3 y 4 sin hardware fisico:
+- tarjeta de adquisicion simulada con puerto serial virtual,
+- backend Python asincrono con persistencia y clasificacion,
+- frontend React para visualizacion en tiempo real,
+- exportacion de datos y metadatos por sesion.
 
-```
-┌─────────────────────┐
-│  Electrochemical    │
-│  Cell (4 electrodes)│
-│  1 mL saliva sample │
-└────────┬────────────┘
-         │ Impedance
-┌────────▼────────────┐
-│  AD5933             │
-│  Impedance Analyzer │
-│  I²C @ 0x0D        │
-└────────┬────────────┘
-         │ I²C (SDA=GPIO21, SCL=GPIO22)
-┌────────▼────────────┐
-│  ESP32 DevKit V1    │
-│  Firmware (Arduino) │
-│  JSON serial @ 115200 baud
-└────────┬────────────┘
-         │ USB Serial
-┌────────▼────────────┐
-│  Python Backend     │
-│  collector.py       │──── pyserial (serial ↔ JSON)
-│  coordinator.py     │──── websockets (async server)
-│  server.py          │──── asyncio event loop
-└────────┬────────────┘
-         │ WebSocket ws://localhost:8765
-┌────────▼────────────┐
-│  React Web App      │
-│  Bode & Nyquist     │
-│  Real-time plots    │
-└─────────────────────┘
-```
-
-## Hardware Connections
-
-| ESP32 Pin | AD5933 Pin | Function          |
-| --------- | ---------- | ----------------- |
-| GPIO 21   | SDA        | I²C Data          |
-| GPIO 22   | SCL        | I²C Clock         |
-| 3.3V      | VDD        | Power             |
-| GND       | GND        | Ground            |
-| —         | VOUT       | Excitation → Cell |
-| —         | VIN        | Response ← Cell   |
-
-A **10 kΩ calibration resistor** connects between VOUT and VIN for system calibration before measurements.
-
-## Serial Protocol
-
-The ESP32 accepts text commands (terminated by `\n`) and responds with JSON:
-
-| Command | Format                            | Description                                                               |
-| ------- | --------------------------------- | ------------------------------------------------------------------------- |
-| `PING`  | `PING`                            | Check connection → `{"type":"pong","device":"BKC32-EIS","version":"1.0"}` |
-| `CFG`   | `CFG` or `CFG:fmin,fmax,n,settle` | Get/set sweep config                                                      |
-| `CAL`   | `CAL` or `CAL:R`                  | Calibrate with known resistance (Ω)                                       |
-| `START` | `START` or `SWEEP`                | Run frequency sweep                                                       |
-| `STOP`  | `STOP`                            | Abort running sweep                                                       |
-| `TEMP`  | `TEMP`                            | Read AD5933 temperature                                                   |
-
-### Data Frame (per frequency point)
-
-```json
-{
-  "type": "data",
-  "i": 0,
-  "f": 1000.0,
-  "Z": 9876.54,
-  "phase": -5.12,
-  "reZ": 9835.12,
-  "imZ": -882.45
-}
-```
-
-| Field   | Description                   |
-| ------- | ----------------------------- |
-| `f`     | Frequency (Hz)                |
-| `Z`     | Impedance magnitude \|Z\| (Ω) |
-| `phase` | Phase angle (degrees)         |
-| `reZ`   | Real part Re(Z) (Ω)           |
-| `imZ`   | Imaginary part Im(Z) (Ω)      |
-
-## Project Structure
+## Arquitectura
 
 ```
-bkc32/
-├── arduino/bkc32/
-│   └── bkc32.ino            # ESP32 + AD5933 firmware
-├── src/
-│   ├── collector.py          # Serial communication with ESP32
-│   ├── coordinator.py        # WebSocket server (relays data to web clients)
-│   ├── settings.py           # Environment configuration
-│   └── utls.py               # Logger and env utilities
-├── server.py                 # Entry point — runs collector + WebSocket server
-├── webapp/
-│   ├── src/
-│   │   ├── App.tsx           # EIS dashboard (controls + Bode/Nyquist plots)
-│   │   ├── main.tsx          # React entry point
-│   │   └── index.css         # Tailwind CSS
-│   ├── index.html
-│   ├── package.json
-│   └── vite.config.ts
-├── documents/
-│   ├── deliveries/
-│   │   ├── phase.1/          # Phase 1: Requirements + block diagram
-│   │   └── phase.2/          # Phase 2: Communication protocol + quantum classification
-│   ├── template/             # UNIR LaTeX template (do not modify)
-│   ├── intiail.pdf           # Original challenge specification
-│   └── notes.txt             # Phase descriptions
-├── Makefile
-├── pyproject.toml
-└── .env.example
+┌─────────────────────────────┐
+│ Tarjeta simulada ESP32/AD5933 │
+│ src/sim_board.py            │
+│ JSON serial @ /tmp/bkc32-sim-serial
+└───────────────┬─────────────┘
+                │
+┌───────────────▼─────────────┐
+│ Backend Python              │
+│ src/collector.py            │
+│ src/coordinator.py          │
+│ server.py                   │
+└───────────────┬─────────────┘
+                │ WebSocket
+┌───────────────▼─────────────┐
+│ Frontend React              │
+│ webapp/src/App.tsx          │
+│ Bode, Nyquist, clasificacion│
+└─────────────────────────────┘
 ```
 
-## Prerequisites
+## Componentes clave
 
-- **Python** ≥ 3.14 + [uv](https://docs.astral.sh/uv/)
-- **Node.js** ≥ 18
-- **Arduino IDE** or **PlatformIO** (for ESP32 firmware upload)
-- **pdflatex** (optional, for rebuilding reports)
-- ESP32 DevKit V1 + AD5933 evaluation board
+- `src/sim_board.py`: emula comandos `PING`, `CFG`, `CAL`, `START`, `STOP`, `TEMP`.
+- `src/collector.py`: gestiona serial, sesiones, exportacion y clasificacion.
+- `src/classifier.py`: clasificador cuantico simulado por circuito de 4 qubits + comparador clasico.
+- `src/coordinator.py`: puente WebSocket entre UI y colector.
+- `webapp/src/App.tsx`: panel de control, graficos en vivo, historial y exportacion.
 
-## Quick Start
+## Comandos principales
 
-### 1. Clone and install
+Instalacion:
 
 ```bash
-git clone <repo-url> && cd bkc32
-cp .env.example .env          # edit SERIAL_PORT if needed
-make install                  # installs Python + Node dependencies
+make install
 ```
 
-### 2. Flash the ESP32
-
-Open `arduino/bkc32/bkc32.ino` in Arduino IDE, select **ESP32 Dev Module**, and upload.
-
-### 3. Run the backend
+Ejecutar tarjeta simulada (terminal 1):
 
 ```bash
-make server
+make sim-board
 ```
 
-### 4. Run the web UI
+Ejecutar backend conectado a serial simulado (terminal 2):
+
+```bash
+make server-sim
+```
+
+Ejecutar frontend (terminal 3):
 
 ```bash
 make webapp
 ```
 
-Open http://localhost:5173 in your browser.
+Abrir http://localhost:5173
 
-### 5. Measurement workflow
+## Flujo de prueba recomendado
 
-1. Click **Ping** to verify the ESP32 connection
-2. Set frequency range (f_min, f_max), number of points, and settling cycles → **Configure**
-3. Connect the **calibration resistor** (10 kΩ) → **Calibrate**
-4. Replace resistor with the **electrochemical cell** containing the saliva sample
-5. Click **Start Sweep** — observe Bode magnitude, Bode phase, and Nyquist plots in real time
-6. Export data for quantum/classical classification analysis
+1. `Ping` para verificar enlace.
+2. `Configure` para fijar rango y numero de puntos.
+3. `Calibrate` con `R_cal`.
+4. Elegir etiqueta esperada (`Candida` o `Control`).
+5. `Start Sweep`.
+6. Revisar Bode/Nyquist + probabilidad cuantica/clasica.
+7. `Exportar ultimo` para obtener rutas de `CSV`, `metadata`, `summary` y `bundle`.
 
-## Web Interface
+## Exportacion por sesion
 
-The dashboard provides:
+Cada sesion genera directorio en `data/acquisitions/<session_id>/` con:
 
-- **Controls**: f_min, f_max, points, settle time, calibration resistance
-- **Actions**: Configure, Calibrate, Start Sweep, Stop, Ping, Temp, Clear
-- **Bode Magnitude**: |Z| vs frequency
-- **Bode Phase**: φ vs frequency
-- **Nyquist Plot**: -Im(Z) vs Re(Z)
-- **Status indicator**: disconnected / connected / sweeping / error
-- **Temperature display** from the AD5933 sensor
-- **Event log** with timestamped messages
+- `<session_id>_data.csv`
+- `<session_id>_metadata.json`
+- `<session_id>_summary.txt`
+- `<session_id>_bundle.json`
 
-## Quantum Classification (VQC)
+## Variables de entorno
 
-As part of the Quantum Computing Master's program, this project includes a **Variational Quantum Classifier (VQC)** implemented with [PennyLane](https://pennylane.ai/) to classify EIS spectra (Candida present vs. control).
+Definidas en `.env.example`:
 
-**Pipeline**: EIS data → normalize → PCA (4 features) → angle encoding (R_Y) → variational circuit (R_Y, R_Z, CNOT layers) → measurement → binary classification
+- `SERIAL_PORT`
+- `BAUDRATE`
+- `SERVER_HOST`
+- `SERVER_PORT`
+- `SERIAL_TIMEOUT`
+- `SERIAL_RETRY_SECONDS`
+- `DATA_DIR`
 
-**Classical comparison**: SVM (RBF kernel) and Random Forest, evaluated with accuracy, precision, recall, and AUC-ROC.
+Para modo simulado no hace falta editar `.env`; `make server-sim` ya usa `/tmp/bkc32-sim-serial`.
 
-See the Phase 2 report for the full algorithm description and code example.
+## Reportes
 
-## Building Reports
+Los entregables latex estan en:
+
+- `documents/deliveries/phase.1`
+- `documents/deliveries/phase.2`
+- `documents/deliveries/phase.3`
+- `documents/deliveries/phase.4`
+
+Compilar todos:
 
 ```bash
-make docs                     # builds Phase 1 and Phase 2 PDFs
-make clean                    # removes LaTeX build artifacts
+make docs
 ```
-
-## Environment Variables
-
-| Variable      | Default        | Description           |
-| ------------- | -------------- | --------------------- |
-| `SERIAL_PORT` | `/dev/ttyUSB0` | ESP32 serial port     |
-| `BAUDRATE`    | `115200`       | Serial baud rate      |
-| `SERVER_HOST` | `localhost`    | WebSocket server host |
-| `SERVER_PORT` | `8765`         | WebSocket server port |
-
-## License
-
-Academic project — Universidad Internacional de la Rioja (UNIR), Master in Quantum Computing.
