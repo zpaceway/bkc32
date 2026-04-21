@@ -160,6 +160,78 @@ El dashboard implementado en React integra cuatro bloques funcionales:
 	\item \textbf{Clasificaci\'{o}n}: probabilidad cu\'{a}ntica, probabilidad cl\'{a}sica y validaci\'{o}n contra etiqueta esperada.
 \end{itemize}
 
+La Figura~\ref{fig:ui-estado-inicial} muestra el estado inicial de la interfaz una vez establecida la conexi\'{o}n con el backend, antes de ejecutar ning\'{u}n comando. Las gr\'{a}ficas se inicializan vac\'{i}as, el panel de clasificaci\'{o}n reporta $0.00\%$ y el historial se carga autom\'{a}ticamente al conectar.
+
+\begin{figure}[ht]
+	\centering
+	\includegraphics[width=\textwidth]{img/01_estado_inicial.png}
+	\caption[Estado inicial de la interfaz]{Estado inicial de la interfaz tras la conexi\'{o}n con el backend, sin datos de barrido. Fuente: elaboraci\'{o}n propia.}
+	\label{fig:ui-estado-inicial}
+\end{figure}
+
+\section{Par\'{a}metros de configuraci\'{o}n}
+
+La Tabla~\ref{tab:parametros-ui} describe los par\'{a}metros expuestos en el panel de control, cuya sem\'{a}ntica se deriva del comportamiento del AD5933 y del modelo electroqu\'{i}mico de Randles empleado durante la simulaci\'{o}n.
+
+\begin{table}[ht]
+	\centering
+	\begin{tabular}{l p{10cm}}
+		\hline\hline
+		Par\'{a}metro      & Descripci\'{o}n                                                                                                                                             \\ [0.5ex]
+		\hline
+		\texttt{f\_min}    & Frecuencia m\'{i}nima del barrido. Valores bajos detectan fen\'{o}menos de difusi\'{o}n (Warburg).                                                          \\
+		\texttt{f\_max}    & Frecuencia m\'{a}xima. Altas frecuencias revelan resistencia de la soluci\'{o}n $R_s$.                                                                      \\
+		\texttt{Puntos}    & Cantidad de frecuencias equiespaciadas en escala logar\'{i}tmica. Rango t\'{i}pico 30--100.                                                                 \\
+		\texttt{Settling}  & Ciclos de asentamiento previos a medir. Valores 1--255, m\'{a}s altos ayudan a cargas capacitivas grandes.                                                  \\
+		\texttt{R\_cal}    & Resistencia de calibraci\'{o}n conocida. Referencia para ganancia y desfase del AD5933. Valor tipico 10~k$\Omega$.                                          \\
+		Etiqueta esperada  & Clase objetivo de la muestra: \texttt{Control (0)} o \texttt{Candida (1)}. Se compara con la predicci\'{o}n del clasificador.                               \\
+		\hline
+	\end{tabular}
+	\caption[Par\'{a}metros de configuraci\'{o}n de la UI]{Par\'{a}metros del panel de control con sem\'{a}ntica electroqu\'{i}mica. Fuente: elaboraci\'{o}n propia.}
+	\label{tab:parametros-ui}
+\end{table}
+
+\section{Botones de acci\'{o}n}
+
+La Tabla~\ref{tab:botones-ui} resume las acciones disponibles en la interfaz. El flujo operativo t\'{i}pico es \textbf{Configurar $\rightarrow$ Calibrar $\rightarrow$ Iniciar sweep}; cualquier modificaci\'{o}n posterior de la configuraci\'{o}n invalida la calibraci\'{o}n activa.
+
+\begin{table}[ht]
+	\centering
+	\begin{tabular}{l p{9.5cm}}
+		\hline\hline
+		Bot\'{o}n           & Funci\'{o}n                                                                                                                       \\ [0.5ex]
+		\hline
+		Configurar          & Env\'{i}a \texttt{CFG} con los par\'{a}metros actuales. Invalida calibraciones previas si se cambia configuraci\'{o}n.            \\
+		Calibrar            & Env\'{i}a \texttt{CAL} con la resistencia de referencia. Calcula \texttt{gain} y \texttt{phase} del hardware.                     \\
+		Iniciar sweep       & Env\'{i}a \texttt{START}. Requiere calibraci\'{o}n vigente. Los puntos se grafican punto a punto.                                 \\
+		Detener             & Env\'{i}a \texttt{STOP}. Aborta el barrido y cierra la sesi\'{o}n con \texttt{stop\_reason=stopped}.                              \\
+		Ping                & Verifica conectividad serial extremo a extremo con el comando \texttt{PING}.                                                      \\
+		Temp                & Solicita lectura del sensor de temperatura interno del AD5933.                                                                    \\
+		Historial           & Consulta las sesiones previas almacenadas en disco.                                                                               \\
+		Exportar \'{u}ltimo & Genera los artefactos exportables (CSV, metadata, summary, bundle) de la \'{u}ltima sesi\'{o}n cerrada.                           \\
+		Limpiar vista       & Borra los datos de pantalla sin afectar el historial persistente.                                                                 \\
+		\hline
+	\end{tabular}
+	\caption[Botones de acci\'{o}n de la UI]{Acciones disponibles en el panel de control y su correspondencia con comandos del protocolo. Fuente: elaboraci\'{o}n propia.}
+	\label{tab:botones-ui}
+\end{table}
+
+Las Figuras~\ref{fig:ui-config-aplicada} y \ref{fig:ui-calibracion-completada} ilustran la evoluci\'{o}n del estado de la interfaz despu\'{e}s de aplicar configuraci\'{o}n y completar una calibraci\'{o}n. Las notificaciones emergentes en la esquina inferior derecha confirman cada transici\'{o}n y el log de eventos deja registro persistente del flujo.
+
+\begin{figure}[ht]
+	\centering
+	\includegraphics[width=\textwidth]{img/02_configuracion_aplicada.png}
+	\caption[Configuraci\'{o}n aplicada]{Interfaz tras enviar el comando \texttt{CFG} con los par\'{a}metros por defecto. Fuente: elaboraci\'{o}n propia.}
+	\label{fig:ui-config-aplicada}
+\end{figure}
+
+\begin{figure}[ht]
+	\centering
+	\includegraphics[width=\textwidth]{img/03_calibracion_completada.png}
+	\caption[Calibraci\'{o}n completada]{Interfaz tras completar la calibraci\'{o}n con $R_{cal}=10$~k$\Omega$. El workflow queda listo para iniciar el barrido. Fuente: elaboraci\'{o}n propia.}
+	\label{fig:ui-calibracion-completada}
+\end{figure}
+
 \section{Ejemplo de trazado Bode y Nyquist}
 
 La Tabla~\ref{tab:muestra-candida} presenta puntos representativos de un barrido simulado con etiqueta esperada \texttt{1} (candida).
@@ -221,6 +293,27 @@ La Figura~\ref{fig:trazos-fase3} sintetiza de forma conceptual la representaci\'
 	\label{fig:trazos-fase3}
 \end{figure}
 
+La Figura~\ref{fig:ui-sweep-en-curso} muestra una captura real de la interfaz durante un barrido activo: el indicador de estado pasa a \textsc{sweeping}, la barra de progreso avanza punto a punto y las tres gr\'{a}ficas se actualizan en vivo conforme llegan los eventos \texttt{data} por WebSocket.
+
+\begin{figure}[ht]
+	\centering
+	\includegraphics[width=\textwidth]{img/04_sweep_en_curso.png}
+	\caption[Barrido en curso]{Interfaz durante la ejecuci\'{o}n de un barrido (31/50 puntos), con actualizaci\'{o}n en vivo de Bode de magnitud, Bode de fase y Nyquist. Fuente: elaboraci\'{o}n propia.}
+	\label{fig:ui-sweep-en-curso}
+\end{figure}
+
+\section{Interpretaci\'{o}n electroqu\'{i}mica de las gr\'{a}ficas}
+
+Las tres gr\'{a}ficas del dashboard representan la misma sesi\'{o}n bajo distintas proyecciones y exponen par\'{a}metros f\'{i}sicos del circuito equivalente de Randles que se simula en la tarjeta virtual:
+
+\begin{itemize}
+	\item \textbf{Bode magnitud} ($|Z|$ vs $f$, escala logar\'{i}tmica). La resistencia de la soluci\'{o}n $R_s$ se identifica como el plateau de alta frecuencia. La diferencia entre plateaus de baja y alta frecuencia corresponde a la resistencia de transferencia de carga $R_{ct}$. Las transiciones intermedias revelan constantes de tiempo caracter\'{i}sticas.
+	\item \textbf{Bode fase} ($\phi$ vs $f$). $0^\circ$ indica comportamiento resistivo, $-90^\circ$ comportamiento puramente capacitivo. Los picos de fase corresponden a frecuencias donde dominan mecanismos de doble capa, transferencia de carga o difusi\'{o}n.
+	\item \textbf{Nyquist} ($-\mathrm{Im}(Z)$ vs $\mathrm{Re}(Z)$). El semic\'{i}rculo corresponde al paralelo $R_{ct} \parallel C_{dl}$ con di\'{a}metro igual a $R_{ct}$. La intersecci\'{o}n izquierda con el eje real entrega $R_s$ y la derecha $R_s + R_{ct}$. La cola a $45^\circ$ a bajas frecuencias es la impedancia de Warburg asociada a difusi\'{o}n.
+\end{itemize}
+
+Durante la simulaci\'{o}n, la deformaci\'{o}n del semic\'{i}rculo y el desplazamiento de los plateaus son la base observable para distinguir muestras con biopel\'{i}cula (clase Candida) de controles.
+
 
 \chapter{Pruebas y resultados}
 
@@ -267,6 +360,15 @@ Se registraron dos barridos de 40 puntos (candida/control) para evaluar consiste
 Los resultados muestran una tasa sostenida cercana a 95 puntos/s, suficiente para visualizaci\'{o}n continua sin bloqueos perceptibles en la UI.
 
 \section{Clasificaci\'{o}n mostrada en UI}
+
+Al cierre de cada barrido la interfaz presenta en forma simult\'{a}nea las salidas del clasificador cu\'{a}ntico y del cl\'{a}sico, las seis features normalizadas utilizadas por ambos modelos, la coincidencia entre modelos y la correspondencia con la etiqueta esperada. La Figura~\ref{fig:ui-sweep-analisis} muestra la pantalla completa tras finalizar un barrido con etiqueta esperada 1 (candida).
+
+\begin{figure}[ht]
+	\centering
+	\includegraphics[width=\textwidth]{img/05_sweep_completado_analisis.png}
+	\caption[Barrido completado y an\'{a}lisis]{Interfaz al cierre de un barrido de 50 puntos: clasificador cu\'{a}ntico (70.15\%), clasificador cl\'{a}sico (94.27\%) y coincidencia con etiqueta esperada. Fuente: elaboraci\'{o}n propia.}
+	\label{fig:ui-sweep-analisis}
+\end{figure}
 
 La Tabla~\ref{tab:clasificacion-ui} resume los resultados publicados en tiempo real en la interfaz para dos sesiones consecutivas.
 

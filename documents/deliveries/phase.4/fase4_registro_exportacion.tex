@@ -10,6 +10,7 @@
 \usepackage{tikz}
 \usetikzlibrary{arrows.meta, positioning, fit}
 \usepackage{listings}
+\usepackage{graphicx}
 \lstset{
 	basicstyle=\ttfamily\footnotesize,
 	breaklines=true,
@@ -155,11 +156,79 @@ El clasificador cu\'{a}ntico se implementa en \texttt{src/classifier.py} como un
 	\item \textbf{Medici\'{o}n}: c\'{a}lculo de valores esperados en qubits 0 y 2, combinados con un t\'{e}rmino de \textit{feature drive} para obtener score final.
 \end{enumerate}
 
-La probabilidad cu\'{a}ntica se define como $p_q = (score + 1)/2$, y la etiqueta cu\'{a}ntica como 1 si $p_q \geq 0.5$.
+\subsection{Normalizaci\'{o}n de caracter\'{i}sticas}
+
+Cada descriptor se normaliza al rango $[-1, 1]$ mediante $\tanh(\cdot)$ centrado en la frontera emp\'{i}rica entre clases y con una escala proporcional a la separaci\'{o}n t\'{i}pica entre Control y Candida. Los centros y escalas se derivan de un circuito de Randles simulado ($R_s$ + $R_{ct} \parallel C_{dl}$ + Warburg) con par\'{a}metros distintos para cada clase; la Tabla~\ref{tab:randles-params} resume los valores empleados durante la simulaci\'{o}n.
+
+\begin{table}[ht]
+	\centering
+	\begin{tabular}{l r r}
+		\hline\hline
+		Par\'{a}metro     & Control (label 0) & Candida (label 1) \\ [0.5ex]
+		\hline
+		$R_s$ ($\Omega$)  & 310               & 220               \\
+		$R_{ct}$ ($\Omega$) & 11500           & 7200              \\
+		$C_{dl}$ (F)      & $1.9\times 10^{-6}$ & $3.2\times 10^{-6}$ \\
+		$\sigma$ Warburg  & 250               & 420               \\
+		\hline
+	\end{tabular}
+	\caption[Par\'{a}metros de Randles por clase]{Par\'{a}metros del circuito equivalente de Randles utilizados por la simulaci\'{o}n para generar las clases de referencia. Fuente: elaboraci\'{o}n propia.}
+	\label{tab:randles-params}
+\end{table}
+
+Los centros y escalas que aplica \texttt{tanh} a cada feature se eligen como punto medio entre los valores t\'{i}picos de cada clase (centro) y aproximadamente la mitad de la separaci\'{o}n (escala), tal como se detalla en la Tabla~\ref{tab:features-norm}.
+
+\begin{table}[ht]
+	\centering
+	\scriptsize
+	\begin{tabular}{l c c c c}
+		\hline\hline
+		Feature                 & Valor t\'{i}pico Control & Valor t\'{i}pico Candida & Centro & Escala \\ [0.5ex]
+		\hline
+		\texttt{mag\_mean}      & 330 $\Omega$           & 230 $\Omega$             & 270    & 85     \\
+		\texttt{mag\_slope}     & $-4.1$                  & $-4.8$                   & $-4.4$ & 0.35   \\
+		\texttt{im\_energy}     & 12 $\Omega$             & 22 $\Omega$              & 17     & 5      \\
+		\texttt{phase\_span}    & $12^\circ$              & $17^\circ$               & 14.3   & 2.2    \\
+		\texttt{phase\_std}     & $3.3^\circ$             & $4.6^\circ$              & 3.9    & 0.8    \\
+		\texttt{low\_high\_ratio} & 1.018                 & 1.028                    & 1.022  & 0.01   \\
+		\hline
+	\end{tabular}
+	\caption[Normalizaci\'{o}n de features]{Centros y escalas de normalizaci\'{o}n derivados del modelo de Randles simulado. Fuente: elaboraci\'{o}n propia.}
+	\label{tab:features-norm}
+\end{table}
+
+\subsection{Codificaci\'{o}n angular y ansatz}
+
+Las cuatro primeras features normalizadas (\texttt{mag\_mean\_norm}, \texttt{mag\_slope\_norm}, \texttt{im\_energy\_norm}, \texttt{phase\_span\_norm}) se convierten en \'{a}ngulos de rotaci\'{o}n mediante
+\[
+\theta_i = (f_i + 1)\,\frac{\pi}{2},
+\]
+que mapea $[-1, 1]$ a $[0, \pi]$ y se aplican como compuertas $R_Y(\theta_i)$ sobre los cuatro qubits, seguidas de CNOT en anillo ($0\!\rightarrow\!1\!\rightarrow\!2\!\rightarrow\!3\!\rightarrow\!0$). Posteriormente se ejecutan dos capas de rotaciones parametrizadas $R_Y$ + $R_Z$ con pesos preentrenados y CNOT adicionales.
+
+\subsection{Medici\'{o}n y score}
+
+Del estado cuantico final se miden los valores esperados $Z$ de los qubits 0 y 2 ($z_0$, $z_2$) y se combinan con un promedio ponderado de las seis features normalizadas:
+\begin{align*}
+\mathrm{feature\_drive} = &\ 0.35\,\mathrm{mag\_mean\_norm} + 0.25\,\mathrm{im\_energy\_norm} \\
+&\ + 0.15\,\mathrm{phase\_span\_norm} + 0.10\,\mathrm{phase\_std\_norm} \\
+&\ + 0.10\,\mathrm{mag\_slope\_norm} + 0.05\,\mathrm{low\_high\_ratio\_norm}, \\
+\mathrm{score} = &\ \mathrm{clamp}(-0.35\,z_0 - 0.20\,z_2 + 0.45\,\mathrm{feature\_drive},\ -1,\ 1), \\
+p_q = &\ (\mathrm{score} + 1)/2.
+\end{align*}
+
+La etiqueta cu\'{a}ntica es 1 (Candida) si $p_q \geq 0.5$, y 0 (Control) en caso contrario.
 
 \section{Comparador cl\'{a}sico}
 
-En paralelo, se calcula una probabilidad cl\'{a}sica mediante una combinaci\'{o}n lineal (logit) de las mismas caracter\'{i}sticas y funci\'{o}n sigmoide. Este valor se usa para contraste operativo en UI y trazabilidad de coherencia entre modelos.
+En paralelo se calcula una probabilidad cl\'{a}sica mediante regresi\'{o}n log\'{i}stica con pesos fijos sobre las seis features normalizadas:
+\begin{align*}
+\ell = &\ 1.60\,\mathrm{mag\_mean\_norm} + 0.70\,\mathrm{mag\_slope\_norm} \\
+&\ + 1.20\,\mathrm{im\_energy\_norm} + 0.90\,\mathrm{phase\_span\_norm} \\
+&\ + 0.80\,\mathrm{phase\_std\_norm} + 0.60\,\mathrm{low\_high\_ratio\_norm} + 0.05, \\
+p_c = &\ \frac{1}{1 + e^{-\ell}}.
+\end{align*}
+
+La etiqueta cl\'{a}sica aplica el mismo umbral $0.5$. Este valor se usa como contraste operativo en la UI y como criterio de coherencia entre modelos.
 
 \section{Verificaci\'{o}n de valor en interfaz}
 
@@ -171,7 +240,34 @@ La interfaz muestra por sesi\'{o}n:
 	\item Estado de acuerdo/discrepancia entre modelos.
 \end{itemize}
 
-Esto satisface el requerimiento de comparaci\'{o}n expl\'{i}cita de valor clasificador en la UI.
+Esto satisface el requerimiento de comparaci\'{o}n expl\'{i}cita de valor clasificador en la UI. La Figura~\ref{fig:ui-analisis-fase4} muestra el panel de clasificaci\'{o}n al cierre de un barrido, incluyendo las seis features normalizadas y el campo de exportaci\'{o}n con las rutas de los artefactos generados autom\'{a}ticamente.
+
+\begin{figure}[ht]
+	\centering
+	\includegraphics[width=\textwidth]{img/05_sweep_completado_analisis.png}
+	\caption[Panel de clasificaci\'{o}n y exportaci\'{o}n al cierre del barrido]{An\'{a}lisis al cierre de un barrido (etiqueta esperada 1), con probabilidades cu\'{a}ntica y cl\'{a}sica, features normalizadas, coincidencia entre modelos y rutas de los archivos exportados autom\'{a}ticamente. Fuente: elaboraci\'{o}n propia.}
+	\label{fig:ui-analisis-fase4}
+\end{figure}
+
+El umbral de decisi\'{o}n es $0.5$ para ambos clasificadores. Los rangos de interpretaci\'{o}n t\'{i}picos se resumen en la Tabla~\ref{tab:umbrales-clasificacion}.
+
+\begin{table}[ht]
+	\centering
+	\begin{tabular}{l c p{6.5cm}}
+		\hline\hline
+		Rango de probabilidad & Etiqueta    & Interpretaci\'{o}n                                \\ [0.5ex]
+		\hline
+		0\%--20\%             & 0 (Control) & Alta confianza de muestra control                 \\
+		20\%--40\%            & 0 (Control) & Confianza moderada de control                     \\
+		40\%--50\%            & 0 (Control) & Zona de incertidumbre, tendencia a control        \\
+		50\%--60\%            & 1 (Candida) & Zona de incertidumbre, tendencia a candida        \\
+		60\%--80\%            & 1 (Candida) & Confianza moderada de candida                     \\
+		80\%--100\%           & 1 (Candida) & Alta confianza de candida                         \\
+		\hline
+	\end{tabular}
+	\caption[Interpretaci\'{o}n de probabilidades]{Interpretaci\'{o}n de los porcentajes mostrados por el clasificador cu\'{a}ntico y el cl\'{a}sico. Fuente: elaboraci\'{o}n propia.}
+	\label{tab:umbrales-clasificacion}
+\end{table}
 
 
 \chapter{Pruebas de exportaci\'{o}n y trazabilidad}
@@ -185,6 +281,15 @@ Se ejecutaron dos barridos consecutivos con etiquetas esperadas 1 y 0:
 \end{itemize}
 
 Ambas sesiones cerraron con \texttt{stop\_reason=completed} y con 40 puntos registrados.
+
+La Figura~\ref{fig:ui-historial} muestra el panel de historial consultable desde la UI. Cada fila presenta el identificador de sesi\'{o}n, el n\'{u}mero de puntos, la raz\'{o}n de parada y las probabilidades Q y C almacenadas.
+
+\begin{figure}[ht]
+	\centering
+	\includegraphics[width=\textwidth]{img/06_historial_sesiones.png}
+	\caption[Historial de sesiones en la UI]{Panel de historial con 25 sesiones persistidas: identificador, puntos, raz\'{o}n de cierre y resultados de clasificaci\'{o}n. Fuente: elaboraci\'{o}n propia.}
+	\label{fig:ui-historial}
+\end{figure}
 
 \section{Resumen de clasificaci\'{o}n y coherencia}
 
@@ -214,6 +319,15 @@ Para la sesi\'{o}n \texttt{session\_20260417\_054612\_940592} se verific\'{o}n l
 \end{itemize}
 
 La misma estructura se valid\'{o} para la sesi\'{o}n de control, confirmando consistencia del proceso de exportaci\'{o}n.
+
+La Figura~\ref{fig:ui-exportacion} muestra el panel \textit{Exportaci\'{o}n y metadatos} una vez generados los cuatro artefactos para la sesi\'{o}n m\'{a}s reciente. Las rutas se construyen a partir del identificador temporal y se exponen textualmente para facilitar la inspecci\'{o}n por parte del operador.
+
+\begin{figure}[ht]
+	\centering
+	\includegraphics[width=\textwidth]{img/07_exportacion_generada.png}
+	\caption[Exportaci\'{o}n generada]{Panel de exportaci\'{o}n con las rutas de CSV, metadata, summary y bundle correspondientes a la \'{u}ltima sesi\'{o}n cerrada. Fuente: elaboraci\'{o}n propia.}
+	\label{fig:ui-exportacion}
+\end{figure}
 
 \section{Ejemplo de contenido metadata}
 
