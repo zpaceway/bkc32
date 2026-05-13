@@ -82,8 +82,7 @@ async def handler(websocket: Connection):
     except websockets.exceptions.ConnectionClosed:
         pass
     finally:
-        if unregister:
-            unregister()
+        unregister()
 
 
 async def serve():

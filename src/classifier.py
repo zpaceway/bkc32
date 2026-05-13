@@ -7,7 +7,7 @@ from typing import Any, Mapping
 def _to_float(value: Any, fallback: float = 0.0) -> float:
     try:
         return float(value)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return fallback
 
 
@@ -205,9 +205,7 @@ def _classical_score_from_features(features: dict[str, float]) -> tuple[float, i
     return probability, label
 
 
-def analyze_sweep(
-    points: list[Mapping[str, Any]], expected_label: Any = None
-) -> dict[str, Any]:
+def analyze_sweep(points: list, expected_label: Any = None) -> dict[str, Any]:
     features = extract_features(points)
     quantum_score, quantum_probability, quantum_label = _quantum_score_from_features(
         features

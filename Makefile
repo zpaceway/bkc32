@@ -1,4 +1,4 @@
-.PHONY: server server-sim sim-board webapp install docs clean screenshots
+.PHONY: server server-sim sim-board webapp install docs clean screenshots screenshots-phase5
 
 server:
 	uv run server.py
@@ -17,7 +17,7 @@ install:
 	cd webapp && npm install
 
 docs:
-	@for phase in 1 2 3 4; do \
+	@for phase in 1 2 3 4 5; do \
 		echo "Building phase $$phase..."; \
 		cp -n documents/template/estilo_unir-1.sty documents/deliveries/phase.$$phase/ 2>/dev/null || true; \
 		cp -n documents/template/logo_unir.png documents/deliveries/phase.$$phase/ 2>/dev/null || true; \
@@ -26,6 +26,7 @@ docs:
 	-cd documents/deliveries/phase.2 && pdflatex -interaction=nonstopmode fase2_comunicacion.tex > /dev/null 2>&1 && pdflatex -interaction=nonstopmode fase2_comunicacion.tex > /dev/null 2>&1
 	-cd documents/deliveries/phase.3 && pdflatex -interaction=nonstopmode fase3_adquisicion_visualizacion.tex > /dev/null 2>&1 && pdflatex -interaction=nonstopmode fase3_adquisicion_visualizacion.tex > /dev/null 2>&1
 	-cd documents/deliveries/phase.4 && pdflatex -interaction=nonstopmode fase4_registro_exportacion.tex > /dev/null 2>&1 && pdflatex -interaction=nonstopmode fase4_registro_exportacion.tex > /dev/null 2>&1
+	-cd documents/deliveries/phase.5 && pdflatex -interaction=nonstopmode fase5_reporte_tecnico_manual_memoria.tex > /dev/null 2>&1 && pdflatex -interaction=nonstopmode fase5_reporte_tecnico_manual_memoria.tex > /dev/null 2>&1
 	@echo "PDFs built successfully."
 
 screenshots:
@@ -49,6 +50,15 @@ screenshots:
 			if [ -f $$f ]; then kill $$(cat $$f) 2>/dev/null || true; rm -f $$f; fi; \
 		done; \
 		rm -f /tmp/bkc32-sim-serial; \
+		exit $$status
+
+screenshots-phase5:
+	@echo "Starting system for phase.5 screenshot capture..."
+	@bash .local/run_system.sh
+	@sleep 3
+	@cd webapp && WEBAPP_URL=http://127.0.0.1:5173 PHASE5_IMG=../documents/deliveries/phase.5/img node scripts/capture_phase5.mjs; status=$$?; \
+		cd ..; \
+		bash .local/stop_system.sh; \
 		exit $$status
 
 clean:
