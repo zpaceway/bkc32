@@ -27,6 +27,8 @@ docs:
 	-cd documents/deliveries/phase.3 && pdflatex -interaction=nonstopmode fase3_adquisicion_visualizacion.tex > /dev/null 2>&1 && pdflatex -interaction=nonstopmode fase3_adquisicion_visualizacion.tex > /dev/null 2>&1
 	-cd documents/deliveries/phase.4 && pdflatex -interaction=nonstopmode fase4_registro_exportacion.tex > /dev/null 2>&1 && pdflatex -interaction=nonstopmode fase4_registro_exportacion.tex > /dev/null 2>&1
 	-cd documents/deliveries/phase.5 && pdflatex -interaction=nonstopmode fase5_reporte_tecnico_manual_memoria.tex > /dev/null 2>&1 && pdflatex -interaction=nonstopmode fase5_reporte_tecnico_manual_memoria.tex > /dev/null 2>&1
+	-cd documents/deliveries/phase.5 && pdflatex -interaction=nonstopmode fase5_manual_usuario.tex > /dev/null 2>&1 && pdflatex -interaction=nonstopmode fase5_manual_usuario.tex > /dev/null 2>&1
+	-cd documents/deliveries/phase.5 && pdflatex -interaction=nonstopmode fase5_cronograma.tex > /dev/null 2>&1 && pdflatex -interaction=nonstopmode fase5_cronograma.tex > /dev/null 2>&1
 	@echo "PDFs built successfully."
 
 screenshots:

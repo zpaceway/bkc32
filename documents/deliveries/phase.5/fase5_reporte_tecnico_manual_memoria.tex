@@ -57,7 +57,7 @@ El sistema implementado abarca desde la especificaci\'{o}n de requerimientos has
 
 Los aportes principales del trabajo son: (1) un protocolo de comunicaci\'{o}n robusto entre Python y ESP32 mediante comandos de texto y respuestas JSON; (2) un backend as\'{i}ncrono con servidor WebSocket para distribuci\'{o}n en tiempo real; (3) una interfaz web interactiva con visualizaci\'{o}n de diagramas de Bode y Nyquist; (4) un modelo de sesi\'{o}n con persistencia multi--formato (CSV, JSON, resumen textual); (5) un clasificador cu\'{a}ntico variacional simulado de 4 qubits con comparador cl\'{a}sico integrado; y (6) un manual de usuario y reporte t\'{e}cnico que documentan el sistema para su uso y mantenimiento.
 
-El cap\'{i}tulo~6 presenta una secci\'{o}n espec\'{i}fica de computaci\'{o}n cu\'{a}ntica aplicada, detallando la arquitectura del clasificador variacional, el enfoque h\'{i}brido cu\'{a}ntico-cl\'{a}sico, la comparaci\'{o}n de rendimiento entre ambos paradigmas y la evaluaci\'{o}n de impacto en la clasificaci\'{o}n de espectros EIS.
+El cap\'{i}tulo~5 presenta una secci\'{o}n espec\'{i}fica de computaci\'{o}n cu\'{a}ntica aplicada, detallando la arquitectura del clasificador variacional, el enfoque h\'{i}brido cu\'{a}ntico-cl\'{a}sico, la comparaci\'{o}n de rendimiento entre ambos paradigmas y la evaluaci\'{o}n de impacto en la clasificaci\'{o}n de espectros EIS.
 
 \vspace{0.5cm}
 {\bf Palabras clave:} espectroscop\'{i}a de impedancia electroqu\'{i}mica, candida albicans, clasificaci\'{o}n cu\'{a}ntica, circuito variacional cu\'{a}ntico, esp32, ad5933, interfaz web, python, memoria final
@@ -70,7 +70,7 @@ The implemented system spans from requirements specification to the delivery of 
 
 The main contributions are: (1) a robust communication protocol between Python and ESP32 using text commands and JSON responses; (2) an asynchronous backend with WebSocket server for real--time distribution; (3) an interactive web interface with Bode and Nyquist diagram visualization; (4) a session model with multi--format persistence (CSV, JSON, textual summary); (5) a simulated 4--qubit variational quantum classifier with integrated classical comparator; and (6) a user manual and technical report documenting the system for use and maintenance.
 
-Chapter~6 provides a dedicated section on applied quantum computing, detailing the variational classifier architecture, the hybrid quantum-classical approach, comparative performance analysis between both paradigms, and the impact assessment on EIS spectrum classification.
+Chapter~5 provides a dedicated section on applied quantum computing, detailing the variational classifier architecture, the hybrid quantum-classical approach, comparative performance analysis between both paradigms, and the impact assessment on EIS spectrum classification.
 
 \vspace{0.5cm}
 {\bf Keywords:} electrochemical impedance spectroscopy, candida albicans, quantum classification, variational quantum circuit, esp32, ad5933, web interface, python, final report
@@ -108,12 +108,13 @@ La memoria se organiza en los siguientes cap\'{i}tulos:
 \begin{itemize}
 	\item Cap\'{i}tulo~2: Objetivos generales y espec\'{i}ficos del proyecto.
 	\item Cap\'{i}tulo~3: Arquitectura del sistema, describiendo las tres capas (hardware, backend, frontend).
-	\item Cap\'{i}tulo~4: Manual de usuario, con gu\'{i}as de instalaci\'{o}n, operaci\'{o}n y resoluci\'{o}n de problemas.
-	\item Cap\'{i}tulo~5: Desarrollo t\'{e}cnico, detallando las cuatro fases de implementaci\'{o}n.
-	\item Cap\'{i}tulo~6: Computaci\'{o}n cu\'{a}ntica aplicada, con la arquitectura VQC, el enfoque h\'{i}brido, comparaci\'{o}n de resultados y evaluaci\'{o}n de impacto.
-	\item Cap\'{i}tulo~7: Validaci\'{o}n y resultados, incluyendo an\'{a}lisis de repetibilidad, cargas patr\'{o}n y sensibilidad a efectos electromagn\'{e}ticos.
-	\item Cap\'{i}tulo~8: Conclusiones y l\'{i}neas de trabajo futuro.
+	\item Cap\'{i}tulo~4: Desarrollo t\'{e}cnico, detallando las cuatro fases de implementaci\'{o}n.
+	\item Cap\'{i}tulo~5: Computaci\'{o}n cu\'{a}ntica aplicada, con la arquitectura VQC, el enfoque h\'{i}brido, comparaci\'{o}n de resultados y evaluaci\'{o}n de impacto.
+	\item Cap\'{i}tulo~6: Validaci\'{o}n y resultados, incluyendo an\'{a}lisis de repetibilidad, cargas patr\'{o}n y sensibilidad a efectos electromagn\'{e}ticos.
+	\item Cap\'{i}tulo~7: Conclusiones y l\'{i}neas de trabajo futuro.
 \end{itemize}
+
+\noindent El manual de usuario se presenta como documento separado (\textit{fase5\_manual\_usuario.pdf}) con gu\'{i}as de instalaci\'{o}n, operaci\'{o}n, interpretaci\'{o}n de resultados y resoluci\'{o}n de problemas.
 
 %=======================================================================
 % CHAPTER 2: OBJETIVOS
@@ -303,313 +304,7 @@ El dashboard implementado en React integra cuatro bloques funcionales:
 \end{itemize}
 
 %=======================================================================
-% CHAPTER 4: MANUAL DE USUARIO
-%=======================================================================
-\chapter{Manual de usuario}
-
-\section{Requisitos del sistema}
-
-\subsection{Hardware}
-
-Para operar con el equipo f\'{i}sico se requiere:
-\begin{itemize}
-	\item Microcontrolador ESP32 DevKit V1.
-	\item Circuito integrado AD5933 con interfaz I\textsuperscript{2}C (o tarjeta de evaluaci\'{o}n EVAL-AD5940ELCZ).
-	\item Celda electroqu\'{i}mica de 4 electrodos.
-	\item Resistencia de calibraci\'{o}n de referencia (t\'{i}picamente 10~k$\Omega$).
-	\item Cable USB para conexi\'{o}n serial entre ESP32 y PC.
-\end{itemize}
-
-Para operar en modo simulado (validaci\'{o}n sin hardware) solo se requiere el PC con el entorno software configurado.
-
-\subsection{Software}
-
-\begin{table}[ht]
-\centering
-\begin{tabular}{l l p{7cm}}
-\hline\hline
-Componente & Versi\'{o}n m\'{i}nima & Prop\'{o}sito \\ [0.5ex]
-\hline
-Python & 3.11 & Backend, collector, clasificador, coordinator \\
-Node.js & 20 & Frontend React y herramientas de build \\
-npm & 10 & Gestor de paquetes del frontend \\
-uv & 0.11 & Gestor de dependencias Python \\
-Navegador web & Chromium/Edge/Firefox & Visualizaci\'{o}n del dashboard \\
-\hline
-\end{tabular}
-\caption[Requisitos software]{Requisitos software del sistema EIS. Fuente: elaboraci\'{o}n propia.}
-\label{tab:requisitos-software}
-\end{table}
-
-\section{Instalaci\'{o}n}
-
-\subsection{Clonar o descomprimir el proyecto}
-
-El c\'{o}digo fuente se distribuye como un repositorio Git. Sit\'{u}ese en el directorio ra\'{i}z del proyecto:
-
-\begin{lstlisting}[language=bash, caption={Estructura del proyecto}]
-bkc32/
-  src/              # Codigo fuente Python
-  webapp/           # Aplicacion React
-  documents/        # Entregables LaTeX
-  data/             # Sesiones persistidas (generado en ejecucion)
-  Makefile          # Comandos de automatizacion
-  .env.example      # Variables de entorno de ejemplo
-\end{lstlisting}
-
-\subsection{Instalar dependencias Python}
-
-El proyecto utiliza \texttt{uv} para la gesti\'{o}n de dependencias Python. Ejecute:
-
-\begin{lstlisting}[language=bash]
-uv sync
-\end{lstlisting}
-
-Esto instalar\'{a} \texttt{pyserial}, \texttt{websockets}, \texttt{python-dotenv} y dem\'{a}s dependencias listadas en \texttt{pyproject.toml}.
-
-\subsection{Instalar dependencias del frontend}
-
-\begin{lstlisting}[language=bash]
-cd webapp
-npm install
-\end{lstlisting}
-
-\subsection{Variables de entorno}
-
-Copie el archivo de ejemplo y aj\'{u}stelo si es necesario:
-
-\begin{lstlisting}[language=bash]
-cp .env.example .env
-\end{lstlisting}
-
-En modo simulado no es necesario modificar \texttt{.env}, ya que el comando \texttt{make server-sim} utiliza el puerto serial virtual \texttt{/tmp/bkc32-sim-serial} por defecto.
-
-\section{Inicio del sistema}
-
-\subsection{Modo simulado (validaci\'{o}n sin hardware)}
-
-Abra tres terminales y ejecute en cada una:
-
-\textbf{Terminal 1} --- Tarjeta simulada:
-\begin{lstlisting}[language=bash]
-make sim-board
-\end{lstlisting}
-
-\textbf{Terminal 2} --- Backend:
-\begin{lstlisting}[language=bash]
-make server-sim
-\end{lstlisting}
-
-\textbf{Terminal 3} --- Frontend:
-\begin{lstlisting}[language=bash]
-make webapp
-\end{lstlisting}
-
-A continuaci\'{o}n abra el navegador en \url{http://localhost:5173}.
-
-\subsection{Modo producci\'{o}n (con hardware ESP32/AD5933)}
-
-Conecte el ESP32 al PC mediante USB. Identifique el puerto serial (por ejemplo, \texttt{/dev/ttyUSB0} en Linux o \texttt{COM3} en Windows) y config\'{u}relo en \texttt{.env}:
-
-\begin{lstlisting}[language=bash]
-SERIAL_PORT=/dev/ttyUSB0
-BAUDRATE=115200
-\end{lstlisting}
-
-Luego inicie solo el backend y el frontend:
-
-\textbf{Terminal 1} --- Backend:
-\begin{lstlisting}[language=bash]
-make server
-\end{lstlisting}
-
-\textbf{Terminal 2} --- Frontend:
-\begin{lstlisting}[language=bash]
-make webapp
-\end{lstlisting}
-
-\section{Flujo de operaci\'{o}n}
-
-La Figura~\ref{fig:ui-estado-inicial} muestra el estado inicial de la interfaz tras establecer la conexi\'{o}n con el backend.
-
-\begin{figure}[ht]
-\centering
-\includegraphics[width=\textwidth]{img/01_estado_inicial.png}
-\caption[Estado inicial de la interfaz]{Estado inicial del dashboard con conexi\'{o}n activa, gr\'{a}ficas vac\'{i}as y workflow pendiente. Fuente: elaboraci\'{o}n propia.}
-\label{fig:ui-estado-inicial}
-\end{figure}
-
-\subsection{Paso 1: Configurar el barrido}
-
-En el panel \textit{Control de adquisici\'{o}n}, ajuste los par\'{a}metros:
-
-\begin{table}[ht]
-\centering
-\begin{tabular}{l l p{8cm}}
-\hline\hline
-Par\'{a}metro & Valor por defecto & Descripci\'{o}n \\ [0.5ex]
-\hline
-\texttt{f\_min} & 1000~Hz & Frecuencia m\'{i}nima del barrido \\ 
-\texttt{f\_max} & 100000~Hz & Frecuencia m\'{a}xima del barrido \\ 
-\texttt{Puntos} & 50 & Cantidad de frecuencias equiespaciadas logar\'{i}tmicamente \\ 
-\texttt{Settling} & 15 ciclos & Ciclos de asentamiento antes de medir \\ 
-\texttt{R\_cal} & 10000~$\Omega$ & Resistencia de calibraci\'{o}n de referencia \\ 
-Etiqueta esperada & Candida~(1) & Clase objetivo de la muestra: Control~(0) o Candida~(1) \\ 
-\hline
-\end{tabular}
-\caption[Par\'{a}metros de configuraci\'{o}n]{Par\'{a}metros del panel de control. Fuente: elaboraci\'{o}n propia.}
-\label{tab:parametros-configuracion}
-\end{table}
-
-Pulse \textbf{Configurar}. La interfaz mostrar\'{a} una notificaci\'{o}n de confirmaci\'{o}n como en la Figura~\ref{fig:ui-config-aplicada}.
-
-\begin{figure}[ht]
-\centering
-\includegraphics[width=\textwidth]{img/02_configuracion_aplicada.png}
-\caption[Configuraci\'{o}n aplicada]{Interfaz tras aplicar configuraci\'{o}n con los par\'{a}metros por defecto. Fuente: elaboraci\'{o}n propia.}
-\label{fig:ui-config-aplicada}
-\end{figure}
-
-\subsection{Paso 2: Calibrar}
-
-Pulse \textbf{Calibrar}. El sistema calcular\'{a} el factor de ganancia y el desfase de referencia utilizando la resistencia \texttt{R\_cal}. El panel mostrar\'{a} los valores obtenidos (Figura~\ref{fig:ui-calibracion-completada}).
-
-\begin{figure}[ht]
-\centering
-\includegraphics[width=\textwidth]{img/03_calibracion_completada.png}
-\caption[Calibraci\'{o}n completada]{Interfaz tras completar la calibraci\'{o}n. El workflow queda listo para iniciar el barrido. Fuente: elaboraci\'{o}n propia.}
-\label{fig:ui-calibracion-completada}
-\end{figure}
-
-\textit{Nota:} Si modifica la configuraci\'{o}n despu\'{e}s de calibrar, la calibraci\'{o}n anterior quedar\'{a} invalidada. El sistema mostrar\'{a} una advertencia y ser\'{a} necesario recalibrar.
-
-\subsection{Paso 3: Iniciar el barrido}
-
-Seleccione la etiqueta esperada (Control o Candida) y pulse \textbf{Iniciar sweep}. El indicador de estado pasar\'{a} a \textsc{sweeping} y las gr\'{a}ficas se actualizar\'{a}n punto a punto conforme lleguen los datos por WebSocket (Figura~\ref{fig:ui-sweep-en-curso}).
-
-\begin{figure}[ht]
-\centering
-\includegraphics[width=\textwidth]{img/04_sweep_en_curso.png}
-\caption[Barrido en curso]{Interfaz durante la ejecuci\'{o}n de un barrido, con actualizaci\'{o}n en vivo de Bode y Nyquist. Fuente: elaboraci\'{o}n propia.}
-\label{fig:ui-sweep-en-curso}
-\end{figure}
-
-\subsection{Paso 4: Revisar an\'{a}lisis}
-
-Al finalizar el barrido, el panel de clasificaci\'{o}n mostrar\'{a}:
-\begin{itemize}
-	\item Probabilidad cu\'{a}ntica y etiqueta cu\'{a}ntica.
-	\item Probabilidad cl\'{a}sica y etiqueta cl\'{a}sica.
-	\item Coincidencia entre modelos y correspondencia con etiqueta esperada.
-	\item Las seis caracter\'{i}sticas normalizadas utilizadas por ambos clasificadores.
-\end{itemize}
-
-La Figura~\ref{fig:ui-analisis} muestra el panel completo tras finalizar un barrido.
-
-\begin{figure}[ht]
-\centering
-\includegraphics[width=\textwidth]{img/05_sweep_completado_analisis.png}
-\caption[An\'{a}lisis al cierre del barrido]{Panel de clasificaci\'{o}n con probabilidades, features normalizadas, coincidencia entre modelos y rutas de exportaci\'{o}n. Fuente: elaboraci\'{o}n propia.}
-\label{fig:ui-analisis}
-\end{figure}
-
-\subsection{Paso 5: Exportar datos}
-
-Pulse \textbf{Exportar \'{u}ltimo} para generar los artefactos de la sesi\'{o}n m\'{a}s reciente. El panel \textit{Exportaci\'{o}n y metadatos} mostrar\'{a} las rutas de los archivos generados (Figura~\ref{fig:ui-exportacion}).
-
-\begin{figure}[ht]
-\centering
-\includegraphics[width=\textwidth]{img/07_exportacion_generada.png}
-\caption[Exportaci\'{o}n generada]{Panel de exportaci\'{o}n con rutas de CSV, metadata, summary y bundle. Fuente: elaboraci\'{o}n propia.}
-\label{fig:ui-exportacion}
-\end{figure}
-
-Cada sesi\'{o}n genera autom\'{a}ticamente cuatro archivos en \texttt{data/acquisitions/<session\_id>/}:
-
-\begin{table}[ht]
-\centering
-\begin{tabular}{l p{9cm}}
-\hline\hline
-Archivo & Contenido \\ [0.5ex]
-\hline
-\texttt{<id>\_data.csv} & Puntos EIS crudos con columnas \texttt{i,f,Z,phase,reZ,imZ,ts} \\
-\texttt{<id>\_metadata.json} & Metadatos de sesi\'{o}n, eventos y resultado de clasificaci\'{o}n \\
-\texttt{<id>\_summary.txt} & Resumen textual compacto para inspecci\'{o}n r\'{a}pida \\
-\texttt{<id>\_bundle.json} & Paquete integral (metadatos + puntos + eventos) \\
-\hline
-\end{tabular}
-\caption[Artefactos de exportaci\'{o}n]{Archivos generados por sesi\'{o}n. Fuente: elaboraci\'{o}n propia.}
-\label{tab:artefactos-exportacion}
-\end{table}
-
-\subsection{Paso 6: Consultar historial}
-
-Pulse \textbf{Historial} para cargar las sesiones previas almacenadas en disco. La tabla lateral muestra el identificador, n\'{u}mero de puntos, raz\'{o}n de cierre y probabilidades Q/C (Figura~\ref{fig:ui-historial}).
-
-\begin{figure}[ht]
-\centering
-\includegraphics[width=\textwidth]{img/06_historial_sesiones.png}
-\caption[Historial de sesiones]{Panel de historial con sesiones persistidas. Fuente: elaboraci\'{o}n propia.}
-\label{fig:ui-historial}
-\end{figure}
-
-\section{Interpretaci\'{o}n de resultados}
-
-\subsection{Diagramas de Bode}
-
-\begin{itemize}
-	\item \textbf{Bode magnitud} ($|Z|$ vs $f$, escala logar\'{i}tmica): la resistencia de la soluci\'{o}n $R_s$ se identifica como el plateau de alta frecuencia. La diferencia entre plateaus de baja y alta frecuencia corresponde a $R_{ct}$.
-	\item \textbf{Bode fase} ($\phi$ vs $f$): $0^\circ$ indica comportamiento resistivo, $-90^\circ$ comportamiento puramente capacitivo. Los picos de fase corresponden a frecuencias donde dominan mecanismos de doble capa o transferencia de carga.
-\end{itemize}
-
-\subsection{Diagrama de Nyquist}
-
-El semic\'{i}rculo corresponde al paralelo $R_{ct} \parallel C_{dl}$ con di\'{a}metro igual a $R_{ct}$. La intersecci\'{o}n izquierda con el eje real entrega $R_s$ y la derecha $R_s + R_{ct}$. La cola a $45^\circ$ a bajas frecuencias es la impedancia de Warburg asociada a difusi\'{o}n.
-
-\subsection{Clasificaci\'{o}n}
-
-El umbral de decisi\'{o}n es 0.5 para ambos clasificadores. La Tabla~\ref{tab:interpretacion-probabilidades} resume los rangos de interpretaci\'{o}n.
-
-\begin{table}[ht]
-\centering
-\begin{tabular}{l c p{6.5cm}}
-\hline\hline
-Rango de probabilidad & Etiqueta & Interpretaci\'{o}n \\ [0.5ex]
-\hline
-0\%--20\% & 0 (Control) & Alta confianza de muestra control \\
-20\%--40\% & 0 (Control) & Confianza moderada de control \\
-40\%--50\% & 0 (Control) & Zona de incertidumbre, tendencia a control \\
-50\%--60\% & 1 (Candida) & Zona de incertidumbre, tendencia a candida \\
-60\%--80\% & 1 (Candida) & Confianza moderada de candida \\
-80\%--100\% & 1 (Candida) & Alta confianza de candida \\
-\hline
-\end{tabular}
-\caption[Interpretaci\'{o}n de probabilidades]{Interpretaci\'{o}n de los porcentajes mostrados por los clasificadores. Fuente: elaboraci\'{o}n propia.}
-\label{tab:interpretacion-probabilidades}
-\end{table}
-
-\section{Resoluci\'{o}n de problemas}
-
-\begin{table}[ht]
-\centering
-\begin{tabular}{p{4.5cm} p{9cm}}
-\hline\hline
-S\'{i}ntoma & Soluci\'{o}n \\ [0.5ex]
-\hline
-\textit{WebSocket desconectado} & Verifique que el backend est\'{e} ejecut\'{a}ndose y que no haya firewall bloqueando el puerto 8765. \\
-\textit{No se puede iniciar sweep} & Aseg\'{u}rese de haber ejecutado \textbf{Calibrar} despu\'{e}s de \textbf{Configurar}. \\
-\textit{Calibraci\'{o}n obsoleta} & Si cambia la configuraci\'{o}n despu\'{e}s de calibrar, recalibre antes de iniciar el sweep. \\
-\textit{Sin datos en gr\'{a}ficas} & Verifique la conexi\'{o}n serial y que la tarjeta responda al comando PING. \\
-\textit{Exportaci\'{o}n fallida} & Aseg\'{u}rese de que exista al menos una sesi\'{o}n finalizada antes de exportar. \\
-\textit{Valores de impedancia err\'{a}ticos} & Verifique las conexiones de la celda electroqu\'{i}mica y la resistencia de calibraci\'{o}n. \\
-\hline
-\end{tabular}
-\caption[Resoluci\'{o}n de problemas]{Gu\'{i}a de resoluci\'{o}n de problemas comunes. Fuente: elaboraci\'{o}n propia.}
-\label{tab:resolucion-problemas}
-\end{table}
-
-%=======================================================================
-% CHAPTER 5: DESARROLLO TECNICO
+% CHAPTER 4: DESARROLLO TECNICO
 %=======================================================================
 \chapter{Desarrollo t\'{e}cnico}
 
@@ -627,7 +322,7 @@ Se implement\'{o} el protocolo bidireccional Python--ESP32 sobre puerto serial U
 
 Los comandos implementados son: \texttt{PING}, \texttt{CFG}, \texttt{CAL}, \texttt{START}, \texttt{STOP} y \texttt{TEMP}. Se desarrollaron los m\'{o}dulos \texttt{collector.py} (gesti\'{o}n serial as\'{i}ncrona) y \texttt{coordinator.py} (servidor WebSocket).
 
-En esta fase se defini\'{o} tambi\'{e}n el enfoque de clasificaci\'{o}n cu\'{a}ntica mediante VQC con PennyLane, incluyendo el pipeline de preprocesamiento, codificaci\'{o}n angular y circuito variacional. Los detalles de la implementaci\'{o}n cu\'{a}ntica se presentan en el Cap\'{i}tulo~6.
+En esta fase se defini\'{o} tambi\'{e}n el enfoque de clasificaci\'{o}n cu\'{a}ntica mediante VQC con PennyLane, incluyendo el pipeline de preprocesamiento, codificaci\'{o}n angular y circuito variacional. Los detalles de la implementaci\'{o}n cu\'{a}ntica se presentan en el Cap\'{i}tulo~5.
 
 \section{Fase 3: Adquisici\'{o}n y visualizaci\'{o}n en tiempo real}
 
@@ -653,10 +348,10 @@ Se validaron latencias de comando inferiores a 4~ms y una tasa de adquisici\'{o}
 
 Se implement\'{o} un modelo de sesi\'{o}n persistente que encapsula configuraci\'{o}n, calibraci\'{o}n, temperatura, datos punto a punto, eventos de protocolo y salida de clasificadores. Cada barrido finalizado genera artefactos exportables en formatos complementarios (CSV, JSON, resumen textual y bundle integral).
 
-La implementaci\'{o}n del clasificador cu\'{a}ntico y del comparador cl\'{a}sico se describe en detalle en el Cap\'{i}tulo~6.
+La implementaci\'{o}n del clasificador cu\'{a}ntico y del comparador cl\'{a}sico se describe en detalle en el Cap\'{i}tulo~5.
 
 %=======================================================================
-% CHAPTER 6: COMPUTACION CUANTICA APLICADA
+% CHAPTER 5: COMPUTACION CUANTICA APLICADA
 %=======================================================================
 \chapter{Computaci\'{o}n cu\'{a}ntica aplicada}
 
@@ -858,7 +553,7 @@ Sensibilidad a correlaciones & Captura correlaciones cruzadas v\'{i}a entrelazam
 
 \subsection{Rendimiento comparativo}
 
-En las pruebas de validaci\'{o}n realizadas (detalladas en el Cap\'{i}tulo~7), ambos clasificadores alcanzaron una exactitud del 100\% sobre las sesiones de prueba. Sin embargo, las probabilidades asignadas difieren notablemente:
+En las pruebas de validaci\'{o}n realizadas (detalladas en el Cap\'{i}tulo~6), ambos clasificadores alcanzaron una exactitud del 100\% sobre las sesiones de prueba. Sin embargo, las probabilidades asignadas difieren notablemente:
 
 \begin{itemize}
 	\item Para muestras de \textit{Candida}: el clasificador cu\'{a}ntico asigna probabilidades en el rango 0.65--0.70, mientras que el cl\'{a}sico asigna 0.94--0.96. El clasificador cl\'{a}sico muestra mayor confianza en las muestras positivas.
@@ -910,7 +605,7 @@ Desde la perspectiva de aplicaci\'{o}n cl\'{i}nica, el clasificador cu\'{a}ntico
 \end{itemize}
 
 %=======================================================================
-% CHAPTER 7: VALIDACION Y RESULTADOS
+% CHAPTER 6: VALIDACION Y RESULTADOS
 %=======================================================================
 \chapter{Validaci\'{o}n y resultados}
 
@@ -1079,10 +774,10 @@ La hip\'{o}tesis experimental es que la exposici\'{o}n a campos EM puede modific
 	\item Una reducci\'{o}n en $R_{ct}$ disminuir\'{i}a \textbf{mag\_mean} y alterar\'{i}a \textbf{low\_high\_ratio}.
 \end{itemize}
 
-La validaci\'{o}n completa de la sensibilidad a efectos EM requiere datos experimentales de muestras biol\'{o}gicas reales expuestas a campos EM controlados, lo que se propone como trabajo futuro (Cap\'{i}tulo~8). El dise\~{n}o actual del software ya soporta el etiquetado de ensayos por tipo (Control, Sham, EM~DC), facilitando la comparaci\'{o}n estad\'{i}stica entre grupos experimentales.
+La validaci\'{o}n completa de la sensibilidad a efectos EM requiere datos experimentales de muestras biol\'{o}gicas reales expuestas a campos EM controlados, lo que se propone como trabajo futuro (Cap\'{i}tulo~7). El dise\~{n}o actual del software ya soporta el etiquetado de ensayos por tipo (Control, Sham, EM~DC), facilitando la comparaci\'{o}n estad\'{i}stica entre grupos experimentales.
 
 %=======================================================================
-% CHAPTER 8: CONCLUSIONES Y TRABAJO FUTURO
+% CHAPTER 7: CONCLUSIONES Y TRABAJO FUTURO
 %=======================================================================
 \chapter{Conclusiones y trabajo futuro}
 
@@ -1096,7 +791,7 @@ Los logros principales son:
 	\item \textbf{Protocolo robusto}: comunicaci\'{o}n serial con comandos de texto y respuestas JSON, validaci\'{o}n de formato, manejo de errores y reconexi\'{o}n autom\'{a}tica.
 	\item \textbf{Backend as\'{i}ncrono}: procesamiento no bloqueante de datos con distribuci\'{o}n WebSocket en tiempo real.
 	\item \textbf{Interfaz web interactiva}: visualizaci\'{o}n en vivo de Bode y Nyquist con actualizaci\'{o}n punto a punto, panel de clasificaci\'{o}n y gesti\'{o}n de historial.
-	\item \textbf{Clasificador cu\'{a}ntico simulado}: implementaci\'{o}n de un VQC de 4 qubits con codificaci\'{o}n angular, ansatz variacional y comparador cl\'{a}sico integrado, documentado en una secci\'{o}n espec\'{i}fica de computaci\'{o}n cu\'{a}ntica aplicada (Cap\'{i}tulo~6).
+	\item \textbf{Clasificador cu\'{a}ntico simulado}: implementaci\'{o}n de un VQC de 4 qubits con codificaci\'{o}n angular, ansatz variacional y comparador cl\'{a}sico integrado, documentado en una secci\'{o}n espec\'{i}fica de computaci\'{o}n cu\'{a}ntica aplicada (Cap\'{i}tulo~5).
 	\item \textbf{Persistencia multi--formato}: modelo de sesi\'{o}n con exportaci\'{o}n autom\'{a}tica a CSV, JSON, resumen textual y bundle integral.
 	\item \textbf{Validaci\'{o}n rigurosa}: an\'{a}lisis de repetibilidad con 6 sesiones (3 por clase), validaci\'{o}n con cargas patr\'{o}n y dise\~{n}o preparado para estudios de sensibilidad electromagn\'{e}tica.
 	\item \textbf{Documentaci\'{o}n completa}: reporte t\'{e}cnico y manual de usuario que permiten la operaci\'{o}n independiente del sistema.
