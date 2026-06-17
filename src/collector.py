@@ -41,6 +41,8 @@ class Session:
     calibration: dict[str, Any] = field(default_factory=dict)
     temperature: float | None = None
     expected_label: int | None = None
+    sample_id: str | None = None
+    assay_type: str | None = None
     stop_reason: str = "pending"
     sweep_done_at: str | None = None
     saved_paths: dict[str, str] = field(default_factory=dict)
@@ -65,6 +67,8 @@ class Collector:
         self.current_session: Session | None = None
         self.last_session: Session | None = None
         self.pending_expected_label: int | None = None
+        self.pending_sample_id: str | None = None
+        self.pending_assay_type: str | None = None
         self.data_dir = Path(DATA_DIR)
         self.data_dir.mkdir(parents=True, exist_ok=True)
 
@@ -111,7 +115,13 @@ class Collector:
     def _session_path(self, session_id: str) -> Path:
         return self.data_dir / session_id
 
-    def _start_session(self, source: str, expected_label: int | None = None) -> Session:
+    def _start_session(
+        self,
+        source: str,
+        expected_label: int | None = None,
+        sample_id: str | None = None,
+        assay_type: str | None = None,
+    ) -> Session:
         session_id = self._build_session_id()
         session = Session(
             id=session_id,
@@ -121,6 +131,8 @@ class Collector:
             calibration=dict(self.current_calibration),
             temperature=self.current_temperature,
             expected_label=expected_label,
+            sample_id=sample_id,
+            assay_type=assay_type,
         )
         self.current_session = session
         logger.info(f"Acquisition session started: {session_id} ({source})")
@@ -136,6 +148,20 @@ class Collector:
         if raw in (0, 1, "0", "1"):
             return int(raw)
         return None
+
+    def _extract_sample_id(self, message: Mapping[str, Any]) -> str | None:
+        raw = message.get("sample_id")
+        if raw is None:
+            return None
+        value = str(raw).strip()
+        return value or None
+
+    def _extract_assay_type(self, message: Mapping[str, Any]) -> str | None:
+        raw = message.get("assay_type")
+        if raw is None:
+            return None
+        value = str(raw).strip().lower()
+        return value if value in {"control", "sham", "em_dc"} else None
 
     def _update_state_from_message(self, message: Mapping[str, Any]) -> None:
         msg_type = str(message.get("type", ""))
@@ -172,19 +198,30 @@ class Collector:
             if self.current_session:
                 self.current_session.temperature = self.current_temperature
         elif msg_type == "sweep_start":
-            expected_label = self._extract_expected_label(message)
+            expected_label = self.pending_expected_label
             if expected_label is None:
-                expected_label = self.pending_expected_label
+                expected_label = self._extract_expected_label(message)
+            sample_id = self.pending_sample_id or self._extract_sample_id(message)
+            assay_type = self.pending_assay_type or self._extract_assay_type(message)
             if self.current_session and not self.current_session.points:
                 session = self.current_session
                 session.source = "device"
                 if session.expected_label is None:
                     session.expected_label = expected_label
+                if session.sample_id is None:
+                    session.sample_id = sample_id
+                if session.assay_type is None:
+                    session.assay_type = assay_type
             else:
                 session = self._start_session(
-                    source="device", expected_label=expected_label
+                    source="device",
+                    expected_label=expected_label,
+                    sample_id=sample_id,
+                    assay_type=assay_type,
                 )
             self.pending_expected_label = None
+            self.pending_sample_id = None
+            self.pending_assay_type = None
             session.config = dict(self.current_config)
             session.calibration = dict(self.current_calibration)
             session.temperature = self.current_temperature
@@ -224,6 +261,8 @@ class Collector:
             "calibration": session.calibration,
             "temperature": session.temperature,
             "expected_label": session.expected_label,
+            "sample_id": session.sample_id,
+            "assay_type": session.assay_type,
             "point_count": len(session.points),
             "events": session.events,
             "analysis": session.analysis,
@@ -244,6 +283,8 @@ class Collector:
             f"point_count={len(session.points)}",
             f"temperature={session.temperature}",
             f"expected_label={session.expected_label}",
+            f"sample_id={session.sample_id}",
+            f"assay_type={session.assay_type}",
         ]
         if session.analysis:
             lines.extend(
@@ -280,6 +321,8 @@ class Collector:
                         "calibration": session.calibration,
                         "temperature": session.temperature,
                         "expected_label": session.expected_label,
+                        "sample_id": session.sample_id,
+                        "assay_type": session.assay_type,
                         "analysis": session.analysis,
                     },
                     "points": session.points,
@@ -344,6 +387,8 @@ class Collector:
                         "point_count": content.get("point_count", 0),
                         "stop_reason": content.get("stop_reason"),
                         "expected_label": content.get("expected_label"),
+                        "sample_id": content.get("sample_id"),
+                        "assay_type": content.get("assay_type"),
                         "analysis": content.get("analysis"),
                     }
                 )
@@ -480,12 +525,21 @@ class Collector:
     def calibrate(self, resistance: float = 10000) -> bool:
         return self.send_command(f"CAL:{resistance}")
 
-    def start_sweep(self, expected_label: int | None = None) -> bool:
+    def start_sweep(
+        self,
+        expected_label: int | None = None,
+        sample_id: str | None = None,
+        assay_type: str | None = None,
+    ) -> bool:
         if expected_label in (0, 1):
             self.pending_expected_label = int(expected_label)
             logger.info(f"Expected label set to {self.pending_expected_label}")
         else:
             self.pending_expected_label = None
+        self.pending_sample_id = sample_id.strip() if sample_id and sample_id.strip() else None
+        self.pending_assay_type = (
+            assay_type if assay_type in {"control", "sham", "em_dc"} else None
+        )
         return self.send_command("START")
 
     async def stop_sweep(self) -> bool:

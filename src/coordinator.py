@@ -59,7 +59,13 @@ async def handler(websocket: Connection):
                     expected_label = int(label)
                 else:
                     expected_label = None
-                collector.start_sweep(expected_label=expected_label)
+                sample_id = str(payload.get("sample_id", "")).strip() or None
+                assay_type = str(payload.get("assay_type", "")).strip().lower()
+                collector.start_sweep(
+                    expected_label=expected_label,
+                    sample_id=sample_id,
+                    assay_type=assay_type,
+                )
             elif cmd_type == "stop":
                 await collector.stop_sweep()
             elif cmd_type == "temp":

@@ -73,6 +73,7 @@ El sistema se estructura en tres capas principales: hardware de medici\'{o}n, ba
 \begin{tikzpicture}[
 	block/.style={rectangle, draw, fill=blue!8, text width=3cm, minimum height=1.2cm, align=center, font=\small},
 	arrow/.style={-{Stealth[length=3mm]}, thick},
+	bidir/.style={{Stealth[length=3mm]}-{Stealth[length=3mm]}, thick},
 	node distance=1.5cm and 2cm
 ]
 	% Hardware layer
@@ -88,11 +89,11 @@ El sistema se estructura en tres capas principales: hardware de medici\'{o}n, ba
 	\node[block, below=2cm of ws] (web) {Interfaz Web\\(React + Vite)};
 
 	% Arrows
-	\draw[arrow, <->] (cell) -- node[above, font=\footnotesize]{EIS} (ad5933);
-	\draw[arrow, <->] (ad5933) -- node[above, font=\footnotesize]{I\textsuperscript{2}C} (esp32);
-	\draw[arrow, <->] (esp32) -- node[right, font=\footnotesize]{USB/Serial} (python);
-	\draw[arrow, <->] (python) -- node[above, font=\footnotesize]{async} (ws);
-	\draw[arrow, <->] (ws) -- node[right, font=\footnotesize]{WS} (web);
+	\draw[bidir] (cell) -- node[above, font=\footnotesize]{EIS} (ad5933);
+	\draw[bidir] (ad5933) -- node[above, font=\footnotesize]{I\textsuperscript{2}C} (esp32);
+	\draw[bidir] (esp32) -- node[right, font=\footnotesize]{USB/Serial} (python);
+	\draw[bidir] (python) -- node[above, font=\footnotesize]{async} (ws);
+	\draw[bidir] (ws) -- node[right, font=\footnotesize]{WS} (web);
 
 	% Labels
 	\node[above=0.3cm of ad5933, font=\footnotesize\itshape, text=gray] {Capa Hardware};

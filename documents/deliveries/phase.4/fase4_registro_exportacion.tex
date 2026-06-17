@@ -46,7 +46,7 @@
 \chapter{Resumen}
 La Fase~4 se centra en el registro persistente de datos de adquisici\'{o}n, el almacenamiento de metadatos por sesi\'{o}n, la exportaci\'{o}n estructurada de resultados y la trazabilidad de clasificaci\'{o}n cu\'{a}ntica/cl\'{a}sica para comparaci\'{o}n en interfaz.
 
-Se implementa un modelo de sesi\'{o}n en backend que encapsula configuraci\'{o}n, calibraci\'{o}n, temperatura, datos punto a punto, eventos de protocolo y salida de clasificadores. Cada barrido finalizado genera artefactos exportables en formatos complementarios (CSV, JSON y resumen textual), permitiendo auditor\'{i}a t\'{e}cnica y uso posterior en pipelines de aprendizaje.
+Se implementa un modelo de sesi\'{o}n en backend que encapsula configuraci\'{o}n, calibraci\'{o}n, temperatura, identificador de muestra, tipo de ensayo, datos punto a punto, eventos de protocolo y salida de clasificadores. Cada barrido finalizado genera artefactos exportables en formatos complementarios (CSV, JSON y resumen textual), permitiendo auditor\'{i}a t\'{e}cnica y uso posterior en pipelines de aprendizaje.
 
 \vspace{0.5cm}
 {\bf Palabras clave:} registro de datos, metadatos, exportaci\'{o}n, trazabilidad, clasificaci\'{o}n cu\'{a}ntica
@@ -75,7 +75,7 @@ Dise\~{n}ar e implementar el subsistema de registro, metadatos y exportaci\'{o}n
 \begin{itemize}
 	\item Definir un modelo de sesi\'{o}n persistente para cada barrido.
 	\item Almacenar datos crudos y eventos de protocolo con marcas temporales UTC.
-	\item Asociar metadatos de configuraci\'{o}n, calibraci\'{o}n y temperatura.
+	\item Asociar metadatos de configuraci\'{o}n, calibraci\'{o}n, temperatura, identificador de muestra y tipo de ensayo.
 	\item Exportar datos en m\'{u}ltiples formatos para consumo anal\'{i}tico.
 	\item Exponer en UI la ruta de exportaci\'{o}n y el historial de sesiones.
 	\item Verificar consistencia entre etiqueta esperada y etiqueta predicha por modelos cu\'{a}ntico y cl\'{a}sico.
@@ -89,6 +89,7 @@ Dise\~{n}ar e implementar el subsistema de registro, metadatos y exportaci\'{o}n
 Cada barrido se modela como una sesi\'{o}n con identificador \texttt{session\_<timestamp>}. Incluye:
 \begin{itemize}
 	\item Identidad temporal: inicio, fin y motivo de cierre.
+	\item Identidad experimental: identificador de muestra (\texttt{sample\_id}) y tipo de ensayo (\texttt{control}, \texttt{sham}, \texttt{em\_dc}).
 	\item Contexto instrumental: configuraci\'{o}n de barrido, calibraci\'{o}n y temperatura.
 	\item Datos: secuencia de puntos EIS con timestamp individual.
 	\item Eventos: \texttt{sweep\_start}, \texttt{sweep\_done}, errores y se\~{n}ales de control.
@@ -132,7 +133,7 @@ Por cada sesi\'{o}n se crea un directorio en \texttt{data/acquisitions/<session\
 		Archivo                      & Contenido                                                                 \\ [0.5ex]
 		\hline
 		\texttt{<id>\_data.csv}      & Puntos EIS crudos con columnas \texttt{i,f,Z,phase,reZ,imZ,ts}.           \\
-		\texttt{<id>\_metadata.json} & Metadatos de sesi\'{o}n, eventos y resultado de clasificaci\'{o}n.        \\
+		\texttt{<id>\_metadata.json} & Metadatos de sesi\'{o}n, \texttt{sample\_id}, \texttt{assay\_type}, eventos y resultado de clasificaci\'{o}n.        \\
 		\texttt{<id>\_summary.txt}   & Resumen textual compacto para inspecci\'{o}n r\'{a}pida en consola.       \\
 		\texttt{<id>\_bundle.json}   & Paquete integral (metadatos + puntos + eventos) para intercambio directo. \\
 		\hline
@@ -234,6 +235,7 @@ La etiqueta cl\'{a}sica aplica el mismo umbral $0.5$. Este valor se usa como con
 
 La interfaz muestra por sesi\'{o}n:
 \begin{itemize}
+	\item Identificador de muestra y tipo de ensayo experimental.
 	\item Probabilidad cu\'{a}ntica y etiqueta cu\'{a}ntica.
 	\item Probabilidad cl\'{a}sica y etiqueta cl\'{a}sica.
 	\item Campo \texttt{expected\_label} y banderas \texttt{quantum\_match}/\texttt{classical\_match}.
@@ -343,6 +345,8 @@ El siguiente extracto ilustra la estructura persistida en \texttt{metadata.json}
   "calibration": {"gain": 1.1112e-06, "phase": -0.027855, "R_cal": 10000.0},
   "temperature": 26.82,
   "expected_label": 1,
+  "sample_id": "sample-001",
+  "assay_type": "control",
   "analysis": {
     "quantum_probability": 0.658004,
     "quantum_label": 1,
@@ -362,6 +366,7 @@ La Fase~4 consolida el sistema EIS simulado con capacidades de trazabilidad comp
 Los aportes principales son:
 \begin{itemize}
 	\item Modelo de sesi\'{o}n robusto con contexto instrumental y anal\'{i}tico integrado.
+	\item Registro expl\'{i}cito de \texttt{sample\_id} y \texttt{assay\_type} para cubrir trazabilidad experimental Control/Sham/EM DC.
 	\item Persistencia multi-formato orientada tanto a inspecci\'{o}n humana como a consumo por pipelines autom\'{a}ticos.
 	\item Historial consultable desde UI para navegaci\'{o}n de sesiones previas.
 	\item Verificaci\'{o}n expl\'{i}cita de clasificaci\'{o}n cu\'{a}ntica y cl\'{a}sica contra etiqueta esperada.

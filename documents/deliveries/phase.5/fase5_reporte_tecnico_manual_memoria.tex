@@ -55,7 +55,7 @@ Este documento constituye la memoria final del proyecto de desarrollo de un sist
 
 El sistema implementado abarca desde la especificaci\'{o}n de requerimientos hasta la entrega de un producto funcional con arquitectura hardware--software completa. La capa f\'{i}sica se basa en el microcontrolador ESP32 y el analizador de impedancia AD5933, mientras que el software se implementa enteramente en Python con un frontend en React. Debido a la indisponibilidad temporal del equipo de laboratorio, la validaci\'{o}n se realiza mediante una tarjeta de adquisici\'{o}n simulada que preserva el contrato de comunicaci\'{o}n serial del firmware original.
 
-Los aportes principales del trabajo son: (1) un protocolo de comunicaci\'{o}n robusto entre Python y ESP32 mediante comandos de texto y respuestas JSON; (2) un backend as\'{i}ncrono con servidor WebSocket para distribuci\'{o}n en tiempo real; (3) una interfaz web interactiva con visualizaci\'{o}n de diagramas de Bode y Nyquist; (4) un modelo de sesi\'{o}n con persistencia multi--formato (CSV, JSON, resumen textual); (5) un clasificador cu\'{a}ntico variacional simulado de 4 qubits con comparador cl\'{a}sico integrado; y (6) un manual de usuario y reporte t\'{e}cnico que documentan el sistema para su uso y mantenimiento.
+Los aportes principales del trabajo son: (1) un protocolo de comunicaci\'{o}n robusto entre Python y ESP32 mediante comandos de texto y respuestas JSON; (2) un backend as\'{i}ncrono con servidor WebSocket para distribuci\'{o}n en tiempo real; (3) una interfaz web interactiva con visualizaci\'{o}n de diagramas de Bode y Nyquist; (4) un modelo de sesi\'{o}n con persistencia multi--formato (CSV, JSON, resumen textual) y trazabilidad de muestra/tipo de ensayo; (5) un clasificador cu\'{a}ntico variacional simulado de 4 qubits con comparador cl\'{a}sico integrado; y (6) un manual de usuario y reporte t\'{e}cnico que documentan el sistema para su uso y mantenimiento.
 
 El cap\'{i}tulo~5 presenta una secci\'{o}n espec\'{i}fica de computaci\'{o}n cu\'{a}ntica aplicada, detallando la arquitectura del clasificador variacional, el enfoque h\'{i}brido cu\'{a}ntico-cl\'{a}sico, la comparaci\'{o}n de rendimiento entre ambos paradigmas y la evaluaci\'{o}n de impacto en la clasificaci\'{o}n de espectros EIS.
 
@@ -68,7 +68,7 @@ This document presents the final report of the development of an electrochemical
 
 The implemented system spans from requirements specification to the delivery of a functional product with a complete hardware--software architecture. The physical layer is based on the ESP32 microcontroller and the AD5933 impedance analyzer, while the software is entirely implemented in Python with a React frontend. Due to temporary unavailability of laboratory equipment, validation is performed using a simulated acquisition board that preserves the serial communication contract of the original firmware.
 
-The main contributions are: (1) a robust communication protocol between Python and ESP32 using text commands and JSON responses; (2) an asynchronous backend with WebSocket server for real--time distribution; (3) an interactive web interface with Bode and Nyquist diagram visualization; (4) a session model with multi--format persistence (CSV, JSON, textual summary); (5) a simulated 4--qubit variational quantum classifier with integrated classical comparator; and (6) a user manual and technical report documenting the system for use and maintenance.
+The main contributions are: (1) a robust communication protocol between Python and ESP32 using text commands and JSON responses; (2) an asynchronous backend with WebSocket server for real--time distribution; (3) an interactive web interface with Bode and Nyquist diagram visualization; (4) a session model with multi--format persistence (CSV, JSON, textual summary) and sample/assay traceability; (5) a simulated 4--qubit variational quantum classifier with integrated classical comparator; and (6) a user manual and technical report documenting the system for use and maintenance.
 
 Chapter~5 provides a dedicated section on applied quantum computing, detailing the variational classifier architecture, the hybrid quantum-classical approach, comparative performance analysis between both paradigms, and the impact assessment on EIS spectrum classification.
 
@@ -134,7 +134,7 @@ Dise\~{n}ar, implementar y validar un sistema de medici\'{o}n de impedancia elec
 	\item Construir una interfaz web interactiva que visualice en tiempo real diagramas de Bode (magnitud y fase) y Nyquist.
 	\item Implementar un clasificador cu\'{a}ntico variacional simulado de 4 qubits con codificaci\'{o}n angular y ansatz parametrizado.
 	\item Desarrollar un comparador cl\'{a}sico de referencia para evaluar la salida del clasificador cu\'{a}ntico.
-	\item Dise\~{n}ar un modelo de sesi\'{o}n persistente que almacene metadatos, eventos y datos en CSV, JSON y resumen textual.
+	\item Dise\~{n}ar un modelo de sesi\'{o}n persistente que almacene metadatos, identificador de muestra, tipo de ensayo, eventos y datos en CSV, JSON y resumen textual.
 	\item Documentar el sistema mediante un reporte t\'{e}cnico y un manual de usuario completos.
 	\item Validar el sistema con an\'{a}lisis de repetibilidad, cargas patr\'{o}n y soluciones control.
 \end{enumerate}
@@ -153,6 +153,7 @@ El sistema se estructura en tres capas principales: hardware de medici\'{o}n, ba
 \begin{tikzpicture}[
 	block/.style={rectangle, draw, fill=blue!8, text width=3.2cm, minimum height=1.2cm, align=center, font=\small},
 	arrow/.style={-{Stealth[length=3mm]}, thick},
+	bidir/.style={{Stealth[length=3mm]}-{Stealth[length=3mm]}, thick},
 	node distance=1.5cm and 2cm
 ]
 	% Hardware layer
@@ -168,11 +169,11 @@ El sistema se estructura en tres capas principales: hardware de medici\'{o}n, ba
 	\node[block, below=2cm of ws, fill=orange!10] (web) {Interfaz Web\\(React + Vite)};
 
 	% Arrows
-	\draw[arrow, <->] (cell) -- node[above, font=\footnotesize]{EIS} (ad5933);
-	\draw[arrow, <->] (ad5933) -- node[above, font=\footnotesize]{I\textsuperscript{2}C} (esp32);
-	\draw[arrow, <->] (esp32) -- node[right, font=\footnotesize]{USB/Serial} (python);
-	\draw[arrow, <->] (python) -- node[above, font=\footnotesize]{async} (ws);
-	\draw[arrow, <->] (ws) -- node[right, font=\footnotesize]{WS} (web);
+	\draw[bidir] (cell) -- node[above, font=\footnotesize]{EIS} (ad5933);
+	\draw[bidir] (ad5933) -- node[above, font=\footnotesize]{I\textsuperscript{2}C} (esp32);
+	\draw[bidir] (esp32) -- node[right, font=\footnotesize]{USB/Serial} (python);
+	\draw[bidir] (python) -- node[above, font=\footnotesize]{async} (ws);
+	\draw[bidir] (ws) -- node[right, font=\footnotesize]{WS} (web);
 
 	% Labels
 	\node[above=0.3cm of ad5933, font=\footnotesize\itshape, text=gray] {Capa Hardware};
@@ -346,7 +347,7 @@ Se validaron latencias de comando inferiores a 4~ms y una tasa de adquisici\'{o}
 
 \section{Fase 4: Registro, metadatos, exportaci\'{o}n y clasificaci\'{o}n}
 
-Se implement\'{o} un modelo de sesi\'{o}n persistente que encapsula configuraci\'{o}n, calibraci\'{o}n, temperatura, datos punto a punto, eventos de protocolo y salida de clasificadores. Cada barrido finalizado genera artefactos exportables en formatos complementarios (CSV, JSON, resumen textual y bundle integral).
+Se implement\'{o} un modelo de sesi\'{o}n persistente que encapsula configuraci\'{o}n, calibraci\'{o}n, temperatura, identificador de muestra, tipo de ensayo (Control/Sham/EM DC), datos punto a punto, eventos de protocolo y salida de clasificadores. Cada barrido finalizado genera artefactos exportables en formatos complementarios (CSV, JSON, resumen textual y bundle integral).
 
 La implementaci\'{o}n del clasificador cu\'{a}ntico y del comparador cl\'{a}sico se describe en detalle en el Cap\'{i}tulo~5.
 
@@ -774,7 +775,7 @@ La hip\'{o}tesis experimental es que la exposici\'{o}n a campos EM puede modific
 	\item Una reducci\'{o}n en $R_{ct}$ disminuir\'{i}a \textbf{mag\_mean} y alterar\'{i}a \textbf{low\_high\_ratio}.
 \end{itemize}
 
-La validaci\'{o}n completa de la sensibilidad a efectos EM requiere datos experimentales de muestras biol\'{o}gicas reales expuestas a campos EM controlados, lo que se propone como trabajo futuro (Cap\'{i}tulo~7). El dise\~{n}o actual del software ya soporta el etiquetado de ensayos por tipo (Control, Sham, EM~DC), facilitando la comparaci\'{o}n estad\'{i}stica entre grupos experimentales.
+La validaci\'{o}n completa de la sensibilidad a efectos EM requiere datos experimentales de muestras biol\'{o}gicas reales expuestas a campos EM controlados, lo que se propone como trabajo futuro (Cap\'{i}tulo~7). El dise\~{n}o actual del software ya soporta el etiquetado y almacenamiento de ensayos por tipo (Control, Sham, EM~DC), facilitando la comparaci\'{o}n estad\'{i}stica entre grupos experimentales.
 
 %=======================================================================
 % CHAPTER 7: CONCLUSIONES Y TRABAJO FUTURO

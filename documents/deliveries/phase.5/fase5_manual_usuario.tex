@@ -77,7 +77,7 @@ Para operar en modo simulado (validaci\'{o}n sin hardware) solo se requiere el P
 \hline\hline
 Componente & Versi\'{o}n m\'{i}nima & Prop\'{o}sito \\ [0.5ex]
 \hline
-Python & 3.11 & Backend, collector, clasificador, coordinator \\
+Python & 3.14 & Backend, collector, clasificador, coordinator \\
 Node.js & 20 & Frontend React y herramientas de build \\
 npm & 10 & Gestor de paquetes del frontend \\
 uv & 0.11 & Gestor de dependencias Python \\
@@ -201,6 +201,8 @@ Par\'{a}metro & Valor por defecto & Descripci\'{o}n \\ [0.5ex]
 \texttt{Puntos} & 50 & Cantidad de frecuencias equiespaciadas logar\'{i}tmicamente \\ 
 \texttt{Settling} & 15 ciclos & Ciclos de asentamiento antes de medir \\ 
 \texttt{R\_cal} & 10000~$\Omega$ & Resistencia de calibraci\'{o}n de referencia \\ 
+ID de muestra & \texttt{sample-001} & Identificador trazable de la muestra o experimento \\
+Tipo de ensayo & Control & Condici\'{o}n experimental: Control, Sham o EM DC \\
 Etiqueta esperada & Candida~(1) & Clase objetivo de la muestra: Control~(0) o Candida~(1) \\ 
 \hline
 \end{tabular}
@@ -232,7 +234,7 @@ Pulse \textbf{Calibrar}. El sistema calcular\'{a} el factor de ganancia y el des
 
 \section{Paso 3: Iniciar el barrido}
 
-Seleccione la etiqueta esperada (Control o Candida) y pulse \textbf{Iniciar sweep}. El indicador de estado pasar\'{a} a \textsc{sweeping} y las gr\'{a}ficas se actualizar\'{a}n punto a punto conforme lleguen los datos por WebSocket (Figura~\ref{fig:ui-sweep-en-curso}).
+Verifique el ID de muestra, seleccione el tipo de ensayo (Control, Sham o EM DC), seleccione la etiqueta esperada (Control o Candida) y pulse \textbf{Iniciar sweep}. El indicador de estado pasar\'{a} a \textsc{sweeping} y las gr\'{a}ficas se actualizar\'{a}n punto a punto conforme lleguen los datos por WebSocket (Figura~\ref{fig:ui-sweep-en-curso}).
 
 \begin{figure}[ht]
 \centering
@@ -280,7 +282,7 @@ Cada sesi\'{o}n genera autom\'{a}ticamente cuatro archivos en \texttt{data/acqui
 Archivo & Contenido \\ [0.5ex]
 \hline
 \texttt{<id>\_data.csv} & Puntos EIS crudos con columnas \texttt{i,f,Z,phase,reZ,imZ,ts} \\
-\texttt{<id>\_metadata.json} & Metadatos de sesi\'{o}n, eventos y resultado de clasificaci\'{o}n \\
+\texttt{<id>\_metadata.json} & Metadatos de sesi\'{o}n, ID de muestra, tipo de ensayo, eventos y resultado de clasificaci\'{o}n \\
 \texttt{<id>\_summary.txt} & Resumen textual compacto para inspecci\'{o}n r\'{a}pida \\
 \texttt{<id>\_bundle.json} & Paquete integral (metadatos + puntos + eventos) \\
 \hline

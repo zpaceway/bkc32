@@ -33,6 +33,7 @@ ChartJS.register(
 const WS_URL = "ws://localhost:8765";
 
 type Status = "disconnected" | "connected" | "sweeping" | "error";
+type AssayType = "control" | "sham" | "em_dc";
 type CommandKey =
   | "ping"
   | "cfg"
@@ -83,6 +84,8 @@ interface SessionHistoryItem {
   point_count: number;
   stop_reason: string;
   expected_label: number | null;
+  sample_id?: string | null;
+  assay_type?: AssayType | null;
   analysis?: AnalysisResult;
 }
 
@@ -129,6 +132,19 @@ const commandLabel = (command: CommandKey): string => {
     export: "EXPORT",
   };
   return labels[command];
+};
+
+const assayLabel = (assayType: AssayType | string | null | undefined): string => {
+  if (assayType === "control") {
+    return "Control";
+  }
+  if (assayType === "sham") {
+    return "Sham";
+  }
+  if (assayType === "em_dc") {
+    return "EM DC";
+  }
+  return "-";
 };
 
 const formatBackendError = (code: string, fallbackMessage: string): string => {
@@ -184,6 +200,8 @@ const App = () => {
   const [status, setStatus] = useState<Status>("disconnected");
   const [temperature, setTemperature] = useState<number | null>(null);
   const [expectedLabel, setExpectedLabel] = useState<0 | 1>(1);
+  const [sampleId, setSampleId] = useState("sample-001");
+  const [assayType, setAssayType] = useState<AssayType>("control");
   const [sweepData, setSweepData] = useState<EISDataPoint[]>([]);
   const [log, setLog] = useState<string[]>([]);
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
@@ -481,14 +499,20 @@ const App = () => {
       );
     }
 
+    const normalizedSampleId = sampleId.trim();
+    if (!normalizedSampleId) {
+      notify("error", "Indica un ID de muestra antes de iniciar sweep.");
+      return;
+    }
+
     const labelText = expectedLabel === 1 ? "Candida" : "Control";
     sendCommand(
       "start",
-      { label: expectedLabel },
-      `Iniciando sweep con etiqueta esperada ${labelText}...`,
+      { label: expectedLabel, sample_id: normalizedSampleId, assay_type: assayType },
+      `Iniciando sweep ${normalizedSampleId} (${assayLabel(assayType)}) con etiqueta esperada ${labelText}...`,
       false,
     );
-  }, [expectedLabel, notify, sendCommand]);
+  }, [assayType, expectedLabel, notify, sampleId, sendCommand]);
 
   const handleStopSweep = useCallback(() => {
     if (statusRef.current !== "sweeping") {
@@ -1056,6 +1080,28 @@ const App = () => {
               <Field label="R_cal (Ohm)" value={calR} onChange={setCalR} />
 
               <div className="field">
+                <label>ID de muestra</label>
+                <input
+                  type="text"
+                  value={sampleId}
+                  onChange={(e) => setSampleId(e.target.value)}
+                  placeholder="sample-001"
+                />
+              </div>
+
+              <div className="field">
+                <label>Tipo de ensayo</label>
+                <select
+                  value={assayType}
+                  onChange={(e) => setAssayType(e.target.value as AssayType)}
+                >
+                  <option value="control">Control</option>
+                  <option value="sham">Sham</option>
+                  <option value="em_dc">EM DC</option>
+                </select>
+              </div>
+
+              <div className="field">
                 <label>Etiqueta esperada</label>
                 <select
                   value={expectedLabel}
@@ -1266,6 +1312,8 @@ const App = () => {
                 <thead>
                   <tr>
                     <th>Sesion</th>
+                    <th>Muestra</th>
+                    <th>Ensayo</th>
                     <th>Pts</th>
                     <th>Stop</th>
                     <th>Q</th>
@@ -1276,6 +1324,8 @@ const App = () => {
                   {history.map((entry) => (
                     <tr key={entry.session_id}>
                       <td>{entry.session_id}</td>
+                      <td>{entry.sample_id ?? "-"}</td>
+                      <td>{assayLabel(entry.assay_type)}</td>
                       <td>{entry.point_count}</td>
                       <td>{entry.stop_reason}</td>
                       <td>
